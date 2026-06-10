@@ -1,0 +1,12 @@
+{
+  "name": "theminecraft",
+  "version": "2.0.0",
+  "description": "Minecraft clone full stack: Three.js client + Node.js server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
