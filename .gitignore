@@ -1,0 +1,14 @@
+# Claude
+.claude/
+CLAUDE.md
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Dữ liệu thế giới đã lưu
+worlds/
+
+# OS
+Thumbs.db
+.DS_Store
