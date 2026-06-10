@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>TheMinecraft - Voxel World</title>
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="crosshair">+</div>
+<div id="hearts"></div>
+<div id="hotbar"></div>
+<div id="info"></div>
+<div id="buildinfo"></div>
+<div id="breakbar"><div></div></div>
+<div id="vignette"></div>
+<div id="watertint"></div>
+<div id="savestate">✔ Đã lưu thế giới</div>
+<div id="inventory"><h2>Chọn block / dụng cụ / nội thất cho ô đang chọn (E để đóng)</h2><div id="invgrid"></div></div>
+<div id="builder"><h2>🤖 AI Builder — chọn công trình để xây trước mặt bạn (B để đóng)</h2><div id="buildgrid"></div></div>
+<div id="deathscreen"><h1>Bạn đã chết!</h1><button id="respawnbtn">Hồi sinh</button></div>
+<div id="overlay">
+  <h1>TheMinecraft</h1>
+  <p><b>WASD</b> di chuyển · <b>Space</b> nhảy/bơi · <b>F</b> bay · <b>E</b> kho đồ · <b>B</b> 🤖 AI Builder</p>
+  <p><b>Giữ chuột trái</b> phá block / tấn công · <b>Chuột phải</b> đặt block / cưỡi 🐴 lên 🛶 · <b>Shift</b> xuống</p>
+  <p><b>1-9</b> / lăn chuột chọn ô · Đập vào <b>TNT</b> để kích nổ 💥</p>
+  <p>Cẩn thận <b style="color:#7fc97f">zombie</b> và <b style="color:#6ee06e">creeper</b> vào ban đêm!</p>
+  <div class="start">Nhấp để chơi</div>
+</div>
+<script type="module" src="./src/main.ts"></script>
+</body>
+</html>

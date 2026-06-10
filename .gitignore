@@ -5,6 +5,7 @@ CLAUDE.md
 # Node
 node_modules/
 npm-debug.log*
+dist/
 
 # Dữ liệu thế giới đã lưu
 worlds/
