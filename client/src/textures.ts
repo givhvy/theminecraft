@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { rand01 } from '@shared/noise';
 
-export const TILE = 16, NTILES = 46;
+export const TILE = 16, NTILES = 52;
 export const tileBaseColor: [number, number, number][] = [];
 
 type TileFn = (x: number, y: number, r: number, g: number, b: number, a?: number) => number[] | void;
@@ -177,6 +177,21 @@ drawTile(45, [225, 90, 20], 20, (x, y, r, g, b) => {              // dung nham: 
   return [r, g, b];
 });
 
+// ===== Nether + công viên (46-51) =====
+drawTile(46, [110, 45, 45], 14, (x, y, r, g, b) => {               // netherrack
+  if (rand01(x * 19 + y * 7) < 0.08) return [r - 20, g - 12, b - 12];
+});
+drawTile(47, [90, 20, 160], 18, (x, y, r, g, b) => {               // portal tím
+  const n = rand01(x * 11 + y * 17);
+  if (n < 0.3) return [180, 80, 255];
+  if (n > 0.85) return [40, 10, 80, 0.6];
+  return [r, g, b, 0.85];
+});
+drawTile(48, [190, 55, 55], 6);                                     // bê tông đỏ
+drawTile(49, [230, 195, 55], 6);                                    // bê tông vàng
+drawTile(50, [55, 95, 190], 6);                                     // bê tông xanh
+drawTile(51, [230, 140, 180], 6);                                   // bê tông hồng
+
 export const atlasTex = new THREE.CanvasTexture(atlasCanvas);
 atlasTex.magFilter = THREE.NearestFilter;
 atlasTex.minFilter = THREE.NearestFilter;
@@ -212,7 +227,10 @@ export function drawToolIcon(kind: string): string {
     for (let x = 2; x < 14; x++) px(x, 10, wood);
     for (let x = 3; x < 13; x++) { px(x, 11, '#6e4f2b'); px(x, 9, wood); }
     px(2, 9, wood); px(13, 9, wood); px(2, 8, wood); px(13, 8, wood);
-    for (let i = 0; i < 5; i++) px(8 + i, 3 + i, '#a8804f'); // mái chèo
+    for (let i = 0; i < 5; i++) px(8 + i, 3 + i, '#a8804f');
+  } else if (kind === 'igniter') {
+    for (let i = 0; i < 6; i++) px(7, 8 + i, '#555');
+    px(7, 7, '#ff6600'); px(6, 6, '#ffaa00'); px(8, 6, '#ffaa00'); px(7, 5, '#ff4400');
   }
   return c.toDataURL();
 }

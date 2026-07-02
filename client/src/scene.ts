@@ -1,7 +1,8 @@
-// Renderer, camera, ánh sáng, bầu trời, ngày/đêm, mây
+// Renderer, camera, ánh sáng, bầu trời, ngày/đêm, mây — nâng cấp ACES + dimension visuals
 import * as THREE from 'three';
 import { CHUNK, RENDER_DIST, DAY_LENGTH } from '@shared/config';
 import { rand01 } from '@shared/noise';
+import type { DimensionId } from '@shared/dimensions';
 
 export const canvas = document.getElementById('game') as HTMLCanvasElement;
 export const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -10,13 +11,15 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
+renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 export const scene = new THREE.Scene();
 export const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 700);
 scene.add(camera);
 
 const DAY_SKY = new THREE.Color(0x8fc8ee), NIGHT_SKY = new THREE.Color(0x0a1228), DUSK_SKY = new THREE.Color(0xe8915a);
+const NETHER_SKY = new THREE.Color(0x1a0808);
 const skyColor = new THREE.Color();
 scene.background = skyColor;
 scene.fog = new THREE.Fog(skyColor, RENDER_DIST * CHUNK * 0.5, RENDER_DIST * CHUNK * 0.95);
@@ -34,6 +37,9 @@ const ambient = new THREE.AmbientLight(0xbfd4ff, 0.5);
 scene.add(ambient);
 const hemi = new THREE.HemisphereLight(0xcfe8ff, 0x9a7a52, 0.45);
 scene.add(hemi);
+
+const netherLight = new THREE.PointLight(0xff4422, 0.6, 80);
+scene.add(netherLight);
 
 const cloudGroup = new THREE.Group();
 const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 });
@@ -59,11 +65,44 @@ window.addEventListener('resize', () => {
 });
 
 let dayTime = 0.3;
+let currentDimension: DimensionId = 'overworld';
 export function sunElevation(): number { return Math.sin(dayTime * Math.PI * 2); }
 export function getDayTime(): number { return dayTime; }
+export function getSceneDimension(): DimensionId { return currentDimension; }
+
+export function setDimensionVisuals(dim: DimensionId): void {
+  currentDimension = dim;
+  cloudGroup.visible = dim === 'overworld';
+  if (dim === 'nether') {
+    skyColor.copy(NETHER_SKY);
+    (scene.fog as THREE.Fog).color.copy(NETHER_SKY);
+    (scene.fog as THREE.Fog).near = RENDER_DIST * CHUNK * 0.35;
+    (scene.fog as THREE.Fog).far = RENDER_DIST * CHUNK * 0.75;
+    sun.intensity = 0.25;
+    sun.color.setHex(0xff6633);
+    ambient.intensity = 0.35;
+    ambient.color.setHex(0xffaa88);
+    hemi.intensity = 0.1;
+    netherLight.intensity = 0.8;
+  } else {
+    (scene.fog as THREE.Fog).near = RENDER_DIST * CHUNK * 0.5;
+    (scene.fog as THREE.Fog).far = RENDER_DIST * CHUNK * 0.95;
+    ambient.color.setHex(0xbfd4ff);
+    netherLight.intensity = 0;
+  }
+}
 
 const tmpColor = new THREE.Color();
 export function updateDayNight(dt: number, playerPos: THREE.Vector3): void {
+  netherLight.position.copy(playerPos);
+  netherLight.position.y += 3;
+
+  if (currentDimension === 'nether') {
+    skyColor.copy(NETHER_SKY);
+    (scene.fog as THREE.Fog).color.copy(NETHER_SKY);
+    return;
+  }
+
   dayTime = (dayTime + dt / DAY_LENGTH) % 1;
   const el = sunElevation();
   const dayF = THREE.MathUtils.clamp(el * 3 + 0.15, 0, 1);

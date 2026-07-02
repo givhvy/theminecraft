@@ -24,8 +24,8 @@ const DICT: Record<string, { en: string; vi: string }> = {
                     vi: '<b>Giữ chuột trái</b> phá block / tấn công · <b>Chuột phải</b> đặt block / cưỡi 🐴 lên 🛶 · <b>Shift</b> xuống' },
   controlsHotbar: { en: '<b>1-9</b> / scroll to pick slot · Hit <b>TNT</b> to ignite 💥 · ⛏ Dig deep for 💎 diamonds, beware 🔥 lava!',
                     vi: '<b>1-9</b> / lăn chuột chọn ô · Đập vào <b>TNT</b> để kích nổ 💥 · ⛏ Đào sâu tìm 💎 kim cương, coi chừng 🔥 dung nham!' },
-  controlsMobs:   { en: 'Watch out for <b style="color:#7fc97f">zombies</b> and <b style="color:#6ee06e">creepers</b> at night!',
-                    vi: 'Cẩn thận <b style="color:#7fc97f">zombie</b> và <b style="color:#6ee06e">creeper</b> vào ban đêm!' },
+  controlsMobs:   { en: 'Watch out for <b style="color:#7fc97f">zombies</b> and <b style="color:#6ee06e">creepers</b> at night! Build an <b>Obsidian portal</b> + use <b>Igniter</b> to reach the Nether!',
+                    vi: 'Cẩn thận <b style="color:#7fc97f">zombie</b> và <b style="color:#6ee06e">creeper</b> ban đêm! Xây <b>portal Obsidian</b> + dùng <b>Lửa mồi</b> để vào Nether!' },
   clickToPlay:    { en: 'Click to play', vi: 'Nhấp để chơi' },
   yourName:       { en: 'Your name…', vi: 'Tên của bạn…' },
   // tài khoản
@@ -55,13 +55,19 @@ const DICT: Record<string, { en: string; vi: string }> = {
   serverFull:     { en: 'Server is full (10/10) — try again later', vi: 'Server đầy (10/10) — thử lại sau' },
   saved:          { en: '✔ World saved', vi: '✔ Đã lưu thế giới' },
   // modal
-  invTitle:       { en: 'Pick block / tool / furniture for selected slot (E to close)', vi: 'Chọn block / dụng cụ / nội thất cho ô đang chọn (E để đóng)' },
+  invTitle:       { en: 'Inventory — pick item for hotbar (E to close)', vi: 'Kho đồ — chọn vật phẩm cho hotbar (E đóng)' },
   buildTitle:     { en: '🤖 AI Builder — pick a structure to build in front of you (B to close)', vi: '🤖 AI Builder — chọn công trình để xây trước mặt bạn (B để đóng)' },
   died:           { en: 'You died!', vi: 'Bạn đã chết!' },
   respawn:        { en: 'Respawn', vi: 'Hồi sinh' },
   building:       { en: '🤖 Building', vi: '🤖 Đang xây' },
   builtDone:      { en: '✅ Finished building', vi: '✅ Đã xây xong' },
   boat:           { en: 'Boat', vi: 'Thuyền' },
+  nether:         { en: '🔥 Nether', vi: '🔥 Nether' },
+  tabTools:       { en: 'Tools', vi: 'Dụng cụ' },
+  tabNatural:     { en: 'Natural', vi: 'Tự nhiên' },
+  tabBuilding:    { en: 'Building', vi: 'Xây dựng' },
+  tabFurniture:   { en: 'Furniture', vi: 'Nội thất' },
+  tabVehicles:    { en: 'Vehicles', vi: 'Phương tiện' },
 };
 
 export function t(key: string): string {

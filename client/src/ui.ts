@@ -1,15 +1,16 @@
-// HUD: hotbar, kho đồ, tim, thanh phá block, overlay, info
-import { B, TNT, GLOW, TOOLS, type ToolId } from '@shared/blocks';
-import { tileToDataURL, drawToolIcon } from './textures';
+// HUD: hotbar, kho đồ tab, tim, thanh phá block
+import { B, TNT, GLOW, TOOLS, FURNITURE_IDS, IGNITER, type ToolId } from '@shared/blocks';
+import { icon3dForItem, clearIcon3dCache } from './icons3d';
 import { sndSlot, sndOpen, sndClose, sndClick } from './audio';
-import { t, blockName, toolName } from './i18n';
+import { t, blockName, toolName, lang, i18nEvents } from './i18n';
 
 export const uiEvents = new EventTarget();
 
 export type Item =
   | { kind: 'tool'; id: ToolId }
   | { kind: 'block'; id: number }
-  | { kind: 'boat' };
+  | { kind: 'boat' }
+  | { kind: 'igniter' };
 
 export const hotbarItems: Item[] = [
   { kind: 'tool', id: 'sword' }, { kind: 'tool', id: 'pickaxe' },
@@ -25,15 +26,29 @@ const iconCache: Record<string, string> = {};
 export function itemIcon(item: Item): string {
   const k = item.kind + ':' + ('id' in item ? item.id : '');
   if (!iconCache[k]) {
-    iconCache[k] =
-      item.kind === 'tool' ? drawToolIcon(item.id) :
-      item.kind === 'boat' ? drawToolIcon('boat') :
-      tileToDataURL(B[item.id].tiles.side);
+    iconCache[k] = icon3dForItem(item);
   }
   return iconCache[k];
 }
 export function itemName(item: Item): string {
-  return item.kind === 'tool' ? toolName(item.id) : item.kind === 'boat' ? t('boat') : blockName(item.id);
+  if (item.kind === 'tool') return toolName(item.id);
+  if (item.kind === 'boat') return t('boat');
+  if (item.kind === 'igniter') return lang === 'vi' ? IGNITER.name : IGNITER.nameEn;
+  return blockName(item.id);
+}
+
+export type InvTab = 'tools' | 'natural' | 'building' | 'furniture' | 'vehicles';
+let activeTab: InvTab = 'tools';
+
+const NATURAL_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 39, 40];
+const BUILDING_IDS = [21, 22, 23, 24, 42, 43, 44, 45];
+
+function entriesForTab(tab: InvTab): Item[] {
+  if (tab === 'tools') return (Object.keys(TOOLS) as ToolId[]).map(id => ({ kind: 'tool' as const, id }));
+  if (tab === 'natural') return NATURAL_IDS.filter(id => B[id] && !B[id].noBreak).map(id => ({ kind: 'block' as const, id }));
+  if (tab === 'building') return BUILDING_IDS.map(id => ({ kind: 'block' as const, id }));
+  if (tab === 'furniture') return FURNITURE_IDS.map(id => ({ kind: 'block' as const, id }));
+  return [{ kind: 'boat' }, { kind: 'igniter' }];
 }
 
 const hotbarEl = document.getElementById('hotbar')!;
@@ -52,25 +67,42 @@ export function setSlot(i: number, silent = false): void {
   if (!silent) sndSlot();
   uiEvents.dispatchEvent(new Event('slotchange'));
 }
-renderHotbar();
 
-// ---- kho đồ (E) ----
 export let inventoryOpen = false;
 const invEl = document.getElementById('inventory')!;
 const invGrid = document.getElementById('invgrid')!;
+const invTabsEl = document.getElementById('invtabs')!;
+
+const TAB_IDS: InvTab[] = ['tools', 'natural', 'building', 'furniture', 'vehicles'];
+const TAB_KEYS: Record<InvTab, string> = {
+  tools: 'tabTools', natural: 'tabNatural', building: 'tabBuilding',
+  furniture: 'tabFurniture', vehicles: 'tabVehicles',
+};
+
+function renderTabs(): void {
+  invTabsEl.innerHTML = '';
+  for (const tab of TAB_IDS) {
+    const btn = document.createElement('button');
+    btn.className = 'invtab' + (tab === activeTab ? ' active' : '');
+    btn.textContent = t(TAB_KEYS[tab]);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      activeTab = tab;
+      renderTabs();
+      renderInventory();
+      sndClick();
+    });
+    invTabsEl.appendChild(btn);
+  }
+}
+
 export function renderInventory(): void {
   invGrid.innerHTML = '';
-  const entries: Item[] = (Object.keys(TOOLS) as ToolId[]).map(id => ({ kind: 'tool', id }));
-  entries.push({ kind: 'boat' });
-  for (const id in B) {
-    if (B[Number(id)].noBreak) continue;
-    entries.push({ kind: 'block', id: Number(id) });
-  }
-  for (const it of entries) {
+  for (const it of entriesForTab(activeTab)) {
     const cell = document.createElement('div');
     cell.className = 'invcell';
     cell.title = itemName(it);
-    cell.innerHTML = `<img src="${itemIcon(it)}" alt="${itemName(it)}">`;
+    cell.innerHTML = `<img src="${itemIcon(it)}" alt="${itemName(it)}"><span class="invlabel">${itemName(it)}</span>`;
     cell.addEventListener('click', () => {
       hotbarItems[slot] = it;
       sndClick();
@@ -80,15 +112,21 @@ export function renderInventory(): void {
     invGrid.appendChild(cell);
   }
 }
+
+// Khởi tạo icon 3D TRƯỚC khi render UI (tránh cache icon 2D cũ)
+clearIcon3dCache();
+renderHotbar();
+renderTabs();
 renderInventory();
+
 export function toggleInventory(): void {
   inventoryOpen = !inventoryOpen;
   invEl.style.display = inventoryOpen ? 'block' : 'none';
+  if (inventoryOpen) { renderTabs(); renderInventory(); }
   inventoryOpen ? sndOpen() : sndClose();
   uiEvents.dispatchEvent(new Event(inventoryOpen ? 'modalopen' : 'modalclose'));
 }
 
-// ---- tim ----
 const heartsEl = document.getElementById('hearts')!;
 export function updateHearts(hp: number): void {
   const full = Math.ceil(Math.max(hp, 0) / 2);
@@ -97,7 +135,6 @@ export function updateHearts(hp: number): void {
   heartsEl.innerHTML = s;
 }
 
-// ---- thanh phá block ----
 const breakbar = document.getElementById('breakbar')!;
 const breakFill = breakbar.firstElementChild as HTMLElement;
 export function showBreakbar(progress: number): void {
@@ -106,7 +143,14 @@ export function showBreakbar(progress: number): void {
 }
 export function hideBreakbar(): void { breakbar.style.display = 'none'; }
 
-// ---- các phần tử khác ----
+const portalbar = document.getElementById('portalbar')!;
+const portalFill = portalbar.firstElementChild as HTMLElement;
+export function showPortalBar(progress: number): void {
+  portalbar.style.display = 'block';
+  portalFill.style.width = Math.min(progress * 100, 100) + '%';
+}
+export function hidePortalBar(): void { portalbar.style.display = 'none'; }
+
 export const overlay = document.getElementById('overlay')!;
 export const vignette = document.getElementById('vignette')!;
 export const watertint = document.getElementById('watertint')!;
@@ -123,3 +167,5 @@ export function showSaved(): void {
   saveStateEl.style.opacity = '1';
   setTimeout(() => { saveStateEl.style.opacity = '0'; }, 1200);
 }
+
+i18nEvents.addEventListener('change', () => { renderTabs(); renderInventory(); renderHotbar(); });

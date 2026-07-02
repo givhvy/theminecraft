@@ -15,6 +15,8 @@ export interface BlockDef {
   noBreak?: boolean;
   /** gây sát thương khi chạm (mỗi giây) */
   damage?: number;
+  /** block portal — đi xuyên qua */
+  portal?: boolean;
 }
 
 export const B: Record<number, BlockDef> = {
@@ -61,6 +63,13 @@ export const B: Record<number, BlockDef> = {
   38: { name: 'Hàng rào',      nameEn: 'Fence',          tiles: { top: 43, bottom: 43, side: 43 }, hardness: 1.0, mat: 'wood', transparent: true },
   // ---- lòng đất ----
   39: { name: 'Dung nham',     nameEn: 'Lava',           tiles: { top: 45, bottom: 45, side: 45 }, hardness: 0, mat: 'other', liquid: true, emissive: true, damage: 4 },
+  // ---- Nether + công viên ----
+  40: { name: 'Đá đỏ Nether',  nameEn: 'Netherrack',     tiles: { top: 46, bottom: 46, side: 46 }, hardness: 0.8, mat: 'stone' },
+  41: { name: 'Cổng Nether',   nameEn: 'Nether Portal',  tiles: { top: 47, bottom: 47, side: 47 }, hardness: 0, mat: 'other', transparent: true, emissive: true, portal: true },
+  42: { name: 'Bê tông đỏ',    nameEn: 'Red Concrete',   tiles: { top: 48, bottom: 48, side: 48 }, hardness: 2.5, mat: 'stone' },
+  43: { name: 'Bê tông vàng',  nameEn: 'Yellow Concrete', tiles: { top: 49, bottom: 49, side: 49 }, hardness: 2.5, mat: 'stone' },
+  44: { name: 'Bê tông xanh',  nameEn: 'Blue Concrete',  tiles: { top: 50, bottom: 50, side: 50 }, hardness: 2.5, mat: 'stone' },
+  45: { name: 'Bê tông hồng',  nameEn: 'Pink Concrete',  tiles: { top: 51, bottom: 51, side: 51 }, hardness: 2.5, mat: 'stone' },
 };
 
 export const WATER = 9, BEDROCK = 13, TNT = 20, OBSIDIAN = 18, LAVA = 39;
@@ -71,6 +80,11 @@ export const CONCRETE_W = 21, CONCRETE_G = 22, CONCRETE_B = 23, WOOD_FLOOR = 24,
   BOOKSHELF = 25, TABLE = 26, CHAIR = 27, BED = 28, SOFA = 29, FRIDGE = 30,
   STOVE = 31, TV = 32, LAMP = 33, CARPET = 34, PAINTING = 35, POT = 36,
   CABINET = 37, FENCE = 38;
+export const NETHERRACK = 40, PORTAL = 41;
+export const CONCRETE_R = 42, CONCRETE_Y = 43, CONCRETE_BL = 44, CONCRETE_P = 45;
+
+/** id nội thất (furniture) */
+export const FURNITURE_IDS = [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38];
 
 export type ToolId = 'sword' | 'pickaxe' | 'axe' | 'shovel';
 export interface ToolDef { name: string; nameEn: string; dmg: number; fast: BlockMat | BlockMat[] }
@@ -82,10 +96,16 @@ export const TOOLS: Record<ToolId, ToolDef> = {
   shovel:  { name: 'Xẻng',  nameEn: 'Shovel',  dmg: 3, fast: 'earth' },
 };
 
+export const IGNITER = { name: 'Lửa mồi', nameEn: 'Igniter' };
+
 export function toolIsFast(tool: ToolDef, mat: BlockMat): boolean {
   return Array.isArray(tool.fast) ? tool.fast.includes(mat) : tool.fast === mat;
 }
 
 export function isValidBlockId(id: number): boolean {
   return id === AIR || !!B[id];
+}
+
+export function isPortalBlock(id: number): boolean {
+  return !!B[id]?.portal;
 }

@@ -1,24 +1,26 @@
-// Mạng: kết nối server authoritative (WebSocket), đồng bộ block + vị trí người chơi
-// - Tự kết nối lại khi rớt mạng (backoff)
-// - Fallback localStorage khi không có server; seed lại world cho server trống (Vercel cold start)
-import { world, type EditMap } from '@shared/world';
+// Mạng: kết nối server authoritative (WebSocket), đồng bộ block + vị trí + dimension
+import { world, worldManager, switchWorldDimension, getCurrentDimension, type EditMap } from '@shared/world';
 import { CHUNK } from '@shared/config';
+import type { DimensionId } from '@shared/dimensions';
 import { showSaved } from './ui';
 import { remotePlayers, RemotePlayer, type RemoteInfo } from './players';
+import { hotbarItems, type Item } from './ui';
 
-interface PlayersItem { id: string; x: number; y: number; z: number; yaw: number; pitch: number; ride: string | null }
+interface PlayersItem { id: string; x: number; y: number; z: number; yaw: number; pitch: number; ride: string | null; dimension?: string }
 type ServerMsg =
-  | { type: 'welcome'; id: string; slot: number; name: string; registered: boolean; edits: EditMap; players: RemoteInfo[] }
+  | { type: 'welcome'; id: string; slot: number; name: string; registered: boolean; edits: EditMap; editsNether?: EditMap; players: RemoteInfo[] }
   | { type: 'full'; max: number }
   | { type: 'joined'; p: RemoteInfo }
   | { type: 'left'; id: string }
   | { type: 'players'; list: PlayersItem[] }
-  | { type: 'init'; edits: EditMap }
-  | { type: 'setBlock'; x: number; y: number; z: number; id: number };
+  | { type: 'init'; edits: EditMap; dimension?: string }
+  | { type: 'setBlock'; x: number; y: number; z: number; id: number; dimension?: string };
 
 const LS_WORLD = 'theminecraft_world';
+const LS_WORLD_NETHER = 'theminecraft_world_nether';
 const LS_AUTH = 'theminecraft_auth';
 const LS_NAME = 'theminecraft_name';
+const LS_HOTBAR = 'theminecraft_hotbar';
 
 export const net = {
   connected: false,
@@ -36,7 +38,6 @@ let ws: WebSocket | null = null;
 let wantJoin = false;
 let retryDelay = 1000;
 
-// ---- tài khoản ----
 export function savedAuth(): { token: string; username: string } | null {
   try { return JSON.parse(localStorage.getItem(LS_AUTH) || 'null'); } catch { return null; }
 }
@@ -58,18 +59,21 @@ export const register = (u: string, p: string) => authRequest('/api/register', u
 export const login = (u: string, p: string) => authRequest('/api/login', u, p);
 export function logout(): void { localStorage.removeItem(LS_AUTH); }
 
-// ---- world helpers ----
-function localEdits(): EditMap {
-  try { return JSON.parse(localStorage.getItem(LS_WORLD) || '{}'); } catch { return {}; }
+function localEdits(dim: DimensionId): EditMap {
+  const key = dim === 'nether' ? LS_WORLD_NETHER : LS_WORLD;
+  try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
 }
-function markAllChunksDirty(): void {
+
+export function markAllChunksDirty(): void {
   for (const c of world.chunks.values()) c.dirty = true;
 }
-function applyRemoteEdit(x: number, y: number, z: number, id: number): void {
-  world.setBlock(x, y, z, id, false);
+
+function applyRemoteEdit(x: number, y: number, z: number, id: number, dim: DimensionId): void {
+  const w = worldManager.worlds[dim];
+  w.setBlock(x, y, z, id, false);
   const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
   const ck = cx + ',' + cz;
-  (world.editsByChunk[ck] = world.editsByChunk[ck] || {})[`${x - cx * CHUNK},${y},${z - cz * CHUNK}`] = id;
+  (w.editsByChunk[ck] = w.editsByChunk[ck] || {})[`${x - cx * CHUNK},${y},${z - cz * CHUNK}`] = id;
 }
 
 function clearRemotePlayers(): void {
@@ -77,12 +81,40 @@ function clearRemotePlayers(): void {
   remotePlayers.clear();
 }
 
-// ---- chơi offline ngay từ đầu (backdrop + fallback) ----
 export function loadLocalWorld(): void {
-  world.editsByChunk = localEdits();
+  worldManager.worlds.overworld.editsByChunk = localEdits('overworld');
+  worldManager.worlds.nether.editsByChunk = localEdits('nether');
+  try {
+    const hb = JSON.parse(localStorage.getItem(LS_HOTBAR) || 'null');
+    if (Array.isArray(hb) && hb.length === 9) {
+      for (let i = 0; i < 9; i++) hotbarItems[i] = hb[i];
+    }
+  } catch { /* noop */ }
 }
 
-// ---- kết nối + join ----
+export async function loadPlayerStateFromServer(): Promise<void> {
+  const auth = savedAuth();
+  if (!auth?.token) return;
+  try {
+    const r = await fetch('/api/player-state', { headers: { Authorization: `Bearer ${auth.token}` } });
+    if (!r.ok) return;
+    const data = await r.json();
+    if (Array.isArray(data.hotbar) && data.hotbar.length === 9) {
+      for (let i = 0; i < 9; i++) hotbarItems[i] = data.hotbar[i];
+    }
+  } catch { /* noop */ }
+}
+
+export function savePlayerStateToServer(x: number, y: number, z: number): void {
+  const auth = savedAuth();
+  if (!auth?.token) return;
+  fetch('/api/player-state', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
+    body: JSON.stringify({ dimension: getCurrentDimension(), x, y, z, hotbar: hotbarItems }),
+  }).catch(() => { /* noop */ });
+}
+
 export function joinServer(name: string): void {
   net.full = false;
   wantJoin = true;
@@ -113,7 +145,7 @@ function openSocket(name: string): void {
     net.joined = false;
     clearRemotePlayers();
     if (wantJoin && !net.full) scheduleRetry(name);
-    if (wasJoined) markAllChunksDirty(); // không cần nhưng giữ world hiển thị nhất quán
+    if (wasJoined) markAllChunksDirty();
   };
   ws.onerror = () => { try { ws?.close(); } catch { /* noop */ } };
 }
@@ -127,17 +159,26 @@ function handleMsg(msg: ServerMsg): void {
   if (msg.type === 'welcome') {
     net.connected = true; net.joined = true;
     net.id = msg.id; net.slot = msg.slot; net.name = msg.name; net.registered = msg.registered;
-    const mine = world.editsByChunk;
+    const mine = worldManager.worlds.overworld.editsByChunk;
+    const mineNether = worldManager.worlds.nether.editsByChunk;
     const serverEmpty = Object.keys(msg.edits).length === 0;
     if (serverEmpty && Object.keys(mine).length > 0) {
-      // server trống (cold start) → gửi bản thế giới local lên khôi phục
-      ws!.send(JSON.stringify({ type: 'seed', edits: mine }));
+      ws!.send(JSON.stringify({ type: 'seed', edits: mine, dimension: 'overworld' }));
     } else {
-      world.editsByChunk = msg.edits;
-      markAllChunksDirty();
+      worldManager.worlds.overworld.editsByChunk = msg.edits;
     }
+    if (msg.editsNether) {
+      const netherEmpty = Object.keys(msg.editsNether).length === 0;
+      if (netherEmpty && Object.keys(mineNether).length > 0) {
+        ws!.send(JSON.stringify({ type: 'seed', edits: mineNether, dimension: 'nether' }));
+      } else {
+        worldManager.worlds.nether.editsByChunk = msg.editsNether;
+      }
+    }
+    markAllChunksDirty();
     clearRemotePlayers();
     for (const p of msg.players) remotePlayers.set(p.id, new RemotePlayer(p));
+    loadPlayerStateFromServer();
   } else if (msg.type === 'full') {
     net.full = true;
     wantJoin = false;
@@ -149,39 +190,56 @@ function handleMsg(msg: ServerMsg): void {
   } else if (msg.type === 'players') {
     for (const it of msg.list) {
       if (it.id === net.id) continue;
+      if (it.dimension && it.dimension !== getCurrentDimension()) continue;
       remotePlayers.get(it.id)?.push(it);
     }
   } else if (msg.type === 'init') {
-    world.editsByChunk = msg.edits;
-    markAllChunksDirty();
+    const dim = (msg.dimension === 'nether' ? 'nether' : 'overworld') as DimensionId;
+    worldManager.worlds[dim].editsByChunk = msg.edits;
+    if (dim === getCurrentDimension()) markAllChunksDirty();
   } else if (msg.type === 'setBlock') {
-    applyRemoteEdit(msg.x, msg.y, msg.z, msg.id);
+    const dim = (msg.dimension === 'nether' ? 'nether' : 'overworld') as DimensionId;
+    applyRemoteEdit(msg.x, msg.y, msg.z, msg.id, dim);
+    if (dim === getCurrentDimension()) markAllChunksDirty();
   }
 }
 
-// ---- gửi vị trí (throttle ~20Hz) ----
 let lastPosSend = 0;
 export function sendPos(x: number, y: number, z: number, yaw: number, pitch: number, ride: string | null): void {
   if (!isConnected() || !ws || ws.readyState !== WebSocket.OPEN) return;
   const now = performance.now();
   if (now - lastPosSend < 50) return;
   lastPosSend = now;
-  ws.send(JSON.stringify({ type: 'pos', x, y, z, yaw, pitch, ride }));
+  ws.send(JSON.stringify({ type: 'pos', x, y, z, yaw, pitch, ride, dimension: getCurrentDimension() }));
 }
 
-// ---- gửi edit của người chơi ----
-world.onEdit = (x, y, z, id) => {
-  if (isConnected() && ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'setBlock', x, y, z, id }));
-  }
-};
+for (const w of Object.values(worldManager.worlds)) {
+  w.onEdit = (x, y, z, id) => {
+    if (isConnected() && ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'setBlock', x, y, z, id, dimension: w.dimension }));
+    }
+  };
+}
 
-// ---- mirror localStorage (luôn luôn — vừa là offline save vừa là nguồn seed) ----
 setInterval(() => {
-  if (!world.pendingSave) return;
-  world.pendingSave = false;
-  try {
-    localStorage.setItem(LS_WORLD, JSON.stringify(world.editsByChunk));
+  let saved = false;
+  for (const [dim, w] of Object.entries(worldManager.worlds) as [DimensionId, typeof world][]) {
+    if (!w.pendingSave) continue;
+    w.pendingSave = false;
+    const key = dim === 'nether' ? LS_WORLD_NETHER : LS_WORLD;
+    localStorage.setItem(key, JSON.stringify(w.editsByChunk));
+    saved = true;
+  }
+  if (saved) {
+    localStorage.setItem(LS_HOTBAR, JSON.stringify(hotbarItems));
     showSaved();
-  } catch { /* hết dung lượng */ }
+  }
 }, 10000);
+
+let lastStateSave = 0;
+export function tickPlayerStateSave(x: number, y: number, z: number): void {
+  const now = performance.now();
+  if (now - lastStateSave < 30000) return;
+  lastStateSave = now;
+  savePlayerStateToServer(x, y, z);
+}

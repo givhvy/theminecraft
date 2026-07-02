@@ -1,8 +1,8 @@
 // Điểm khởi động và vòng lặp chính
 import { CHUNK } from '@shared/config';
-import { world } from '@shared/world';
+import { world, getCurrentDimension } from '@shared/world';
 import { inWater, inLava } from '@shared/physics';
-import { renderer, scene, camera, highlight, updateDayNight, getDayTime, sunElevation } from './scene';
+import { renderer, scene, camera, highlight, updateDayNight, getDayTime, sunElevation, getSceneDimension } from './scene';
 import { buildChunkMesh, updateChunks } from './meshing';
 import { player, updatePlayer, findSpawn } from './player';
 import { keys, isLocked } from './controls';
@@ -14,12 +14,13 @@ import { updateParticles } from './particles';
 import { updateHand } from './hand';
 import { updateBuilder } from './builder';
 import { raycastBlock } from './raycast';
-import { loadLocalWorld, isConnected, sendPos, playerCount, net } from './net';
+import { loadLocalWorld, isConnected, sendPos, playerCount, net, tickPlayerStateSave } from './net';
 import { updateRemotePlayers } from './players';
-import { heldItem, itemName, infoEl, watertint } from './ui';
+import { heldItem, itemName, infoEl, watertint, showPortalBar, hidePortalBar } from './ui';
 import { mobs } from './entities';
 import { sndBird, sndCricket } from './audio';
 import { t } from './i18n';
+import { updatePortal, getPortalProgress } from './portal';
 import './menu';
 
 let lastTime = performance.now();
@@ -35,10 +36,15 @@ function loop(now: number): void {
   if (locked && !player.dead) {
     updatePlayer(dt, keys);
     updateMining(dt);
+    updatePortal(dt);
+  } else {
+    hidePortalBar();
   }
   updateChunks(player.pos);
-  updateMobs(dt);
-  updateBoats(dt);
+  if (getCurrentDimension() === 'overworld') {
+    updateMobs(dt);
+    updateBoats(dt);
+  }
   updateTNT(dt);
   updateParticles(dt);
   updateDayNight(dt, player.pos);
@@ -46,12 +52,16 @@ function loop(now: number): void {
   updateBuilder(dt);
   updateRemotePlayers(dt);
 
-  // gửi vị trí lên server (throttle bên trong)
   sendPos(player.pos.x, player.pos.y, player.pos.z, player.yaw, player.pitch,
     player.riding ? player.riding.rideKind : null);
+  tickPlayerStateSave(player.pos.x, player.pos.y, player.pos.z);
+
+  const portalProg = getPortalProgress();
+  if (portalProg > 0) showPortalBar(portalProg);
+  else hidePortalBar();
 
   ambientTimer -= dt;
-  if (ambientTimer <= 0) {
+  if (ambientTimer <= 0 && getSceneDimension() === 'overworld') {
     ambientTimer = 5 + Math.random() * 8;
     if (locked) sunElevation() > 0.1 ? sndBird() : sndCricket();
   }
@@ -70,12 +80,13 @@ function loop(now: number): void {
   const hourF = (getDayTime() * 24 + 6) % 24;
   const p = player.pos;
   const riding = player.riding ? ` · ${player.riding.rideKind === 'horse' ? t('ridingHorse') : t('ridingBoat')}` : '';
+  const dimLabel = getCurrentDimension() === 'nether' ? ` · ${t('nether')}` : '';
   const netLine = isConnected()
     ? `🌐 ${t('online')} · ${t('players')}: ${playerCount()}/10`
     : `💾 ${t('local')}`;
   const profileLine = net.joined ? `${t('profile')}: P${net.slot} · ${net.name}${net.registered ? ' ✓' : ''}<br>` : '';
   infoEl.innerHTML =
-    `FPS: ${fpsShown} · ${netLine}<br>` +
+    `FPS: ${fpsShown} · ${netLine}${dimLabel}<br>` +
     profileLine +
     `XYZ: ${p.x.toFixed(1)} / ${p.y.toFixed(1)} / ${p.z.toFixed(1)}<br>` +
     `${t('time')}: ${String(hourF | 0).padStart(2, '0')}:${String((hourF % 1) * 60 | 0).padStart(2, '0')} · Mobs: ${mobs.length}<br>` +
@@ -85,7 +96,7 @@ function loop(now: number): void {
 }
 
 (function start(): void {
-  loadLocalWorld(); // backdrop + offline; server sẽ đồng bộ lại khi bấm Chơi
+  loadLocalWorld();
   player.pos.copy(findSpawn());
   for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
     const c = world.getChunk(Math.floor(player.pos.x / CHUNK) + dx, Math.floor(player.pos.z / CHUNK) + dz);

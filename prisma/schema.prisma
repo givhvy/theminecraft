@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model BlockEdit {
+  id        Int    @id @default(autoincrement())
+  worldName String
+  dimension String @default("overworld")
+  x         Int
+  y         Int
+  z         Int
+  blockId   Int
+
+  @@unique([worldName, dimension, x, y, z])
+  @@index([worldName, dimension])
+}
+
+model Account {
+  username String @id
+  salt     String
+  hash     String
+}
+
+model PlayerState {
+  username  String @id
+  dimension String @default("overworld")
+  x         Float  @default(0)
+  y         Float  @default(20)
+  z         Float  @default(0)
+  hotbar    String @default("[]")
+}

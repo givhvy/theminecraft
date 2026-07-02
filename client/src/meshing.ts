@@ -69,11 +69,11 @@ export function buildChunkMesh(chunk: Chunk): void {
     const b = chunk.data[(y * CHUNK + z) * CHUNK + x];
     if (b === AIR) continue;
     const def = B[b];
-    const target = def.emissive ? groups.glow : (def.liquid ? groups.water : groups.solid);
+      const target = def.liquid || def.portal ? groups.water : (def.emissive ? groups.glow : groups.solid);
     for (const face of FACES) {
       const nb = getB(baseX + x + face.dir[0], y + face.dir[1], baseZ + z + face.dir[2]);
       const nbDef = B[nb];
-      const visible = nb === AIR || (nbDef && (nbDef.transparent || nbDef.liquid) && nb !== b);
+      const visible = nb === AIR || (nbDef && (nbDef.transparent || nbDef.liquid || nbDef.portal) && nb !== b);
       if (!visible) continue;
       const tileIdx = def.tiles[face.tile];
       const vi = target.positions.length / 3;

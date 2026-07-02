@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { B, TOOLS, isValidBlockId, toolIsFast, AIR } from '@shared/blocks';
 
-const NTILES = 46; // phải khớp với client/src/textures.ts
+const NTILES = 52; // phải khớp với client/src/textures.ts
 
 describe('blocks', () => {
   it('mọi tile index nằm trong atlas', () => {
@@ -30,6 +30,11 @@ describe('blocks', () => {
   it('có đủ nội thất (>= 14 block id mới từ 25 trở lên)', () => {
     const furniture = Object.keys(B).map(Number).filter(id => id >= 25);
     expect(furniture.length).toBeGreaterThanOrEqual(14);
+  });
+  it('block portal và netherrack hợp lệ', () => {
+    expect(isValidBlockId(40)).toBe(true);
+    expect(isValidBlockId(41)).toBe(true);
+    expect(B[41].portal).toBe(true);
   });
   it('toolIsFast: cúp nhanh với đá và kim loại, rìu với gỗ', () => {
     expect(toolIsFast(TOOLS.pickaxe, 'stone')).toBe(true);

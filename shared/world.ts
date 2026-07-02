@@ -1,7 +1,9 @@
 // Dữ liệu thế giới: chunk, sinh địa hình, get/set block (logic thuần, không phụ thuộc DOM/THREE)
 import { CHUNK, HEIGHT, SEA_LEVEL } from './config.js';
-import { AIR, WATER, BEDROCK, LAVA, B } from './blocks.js';
+import { AIR, WATER, BEDROCK, LAVA, B, NETHERRACK, GLOW } from './blocks.js';
 import { hash2, noise3, terrainHeight } from './noise.js';
+import { stampThemeParkIntoChunk } from './themepark.js';
+import type { DimensionId } from './dimensions.js';
 
 /** dung nham lấp đầy hang động từ y này trở xuống */
 export const LAVA_LEVEL = 10;
@@ -16,11 +18,16 @@ export interface Chunk {
 export type EditMap = Record<string, Record<string, number>>;
 
 export class WorldMap {
+  dimension: DimensionId;
   chunks = new Map<string, Chunk>();
   editsByChunk: EditMap = {};
   pendingSave = false;
   /** hook để tầng mạng gửi edit lên server */
   onEdit: ((x: number, y: number, z: number, id: number) => void) | null = null;
+
+  constructor(dimension: DimensionId = 'overworld') {
+    this.dimension = dimension;
+  }
 
   key(cx: number, cz: number): string { return cx + ',' + cz; }
 
@@ -31,12 +38,26 @@ export class WorldMap {
     return c;
   }
 
-  /** đọc chunk nếu đã sinh, không kích hoạt sinh mới (cho vòng lặp render tránh giật) */
   peekChunk(cx: number, cz: number): Chunk | undefined {
     return this.chunks.get(this.key(cx, cz));
   }
 
   generateChunk(cx: number, cz: number): Chunk {
+    const data = this.dimension === 'nether'
+      ? this.generateNetherChunk(cx, cz)
+      : this.generateOverworldChunk(cx, cz);
+    const edits = this.editsByChunk[this.key(cx, cz)];
+    if (edits) {
+      const idx = (x: number, y: number, z: number) => (y * CHUNK + z) * CHUNK + x;
+      for (const k in edits) {
+        const [lx, ly, lz] = k.split(',').map(Number);
+        data[idx(lx, ly, lz)] = edits[k];
+      }
+    }
+    return { data, meshes: [], dirty: true, cx, cz };
+  }
+
+  private generateOverworldChunk(cx: number, cz: number): Uint8Array {
     const data = new Uint8Array(CHUNK * HEIGHT * CHUNK);
     const idx = (x: number, y: number, z: number) => (y * CHUNK + z) * CHUNK + x;
     for (let x = 0; x < CHUNK; x++) for (let z = 0; z < CHUNK; z++) {
@@ -52,7 +73,6 @@ export class WorldMap {
           else if (y < 28 && r >= 0.012 && r < 0.018) b = 15;
           else if (y < 18 && r >= 0.018 && r < 0.022) b = 16;
           else if (y < 12 && r >= 0.022 && r < 0.0245) b = 17;
-          // hang động: khoét bằng noise 3D, dưới LAVA_LEVEL lấp dung nham
           if (y >= 2 && noise3(wx * 0.08, y * 0.13, wz * 0.08) > 0.72) {
             b = y <= LAVA_LEVEL ? LAVA : AIR;
           }
@@ -78,13 +98,44 @@ export class WorldMap {
         if (data[idx(lx, ly, lz)] === AIR) data[idx(lx, ly, lz)] = 5;
       }
     }
-    // áp dụng chỉnh sửa đã lưu
-    const edits = this.editsByChunk[this.key(cx, cz)];
-    if (edits) for (const k in edits) {
-      const [lx, ly, lz] = k.split(',').map(Number);
-      data[idx(lx, ly, lz)] = edits[k];
+    // công viên giải trí
+    stampThemeParkIntoChunk(data, cx, cz, CHUNK, HEIGHT, idx);
+    return data;
+  }
+
+  private generateNetherChunk(cx: number, cz: number): Uint8Array {
+    const data = new Uint8Array(CHUNK * HEIGHT * CHUNK);
+    const idx = (x: number, y: number, z: number) => (y * CHUNK + z) * CHUNK + x;
+    const NETHER_FLOOR = 32;
+    const NETHER_CEIL = HEIGHT - 4;
+
+    for (let x = 0; x < CHUNK; x++) for (let z = 0; z < CHUNK; z++) {
+      const wx = cx * CHUNK + x, wz = cz * CHUNK + z;
+      const bump = (hash2(wx * 3, wz * 5) * 6 | 0);
+      const floor = NETHER_FLOOR + bump;
+      for (let y = 0; y < HEIGHT; y++) {
+        if (y === 0) data[idx(x, y, z)] = BEDROCK;
+        else if (y >= NETHER_CEIL) data[idx(x, y, z)] = BEDROCK;
+        else if (y <= floor) {
+          const r = hash2(wx * 7 + y, wz * 11 + y);
+          if (y <= 12 && r < 0.08) data[idx(x, y, z)] = LAVA;
+          else if (y >= floor - 1 && r > 0.92) data[idx(x, y, z)] = GLOW;
+          else data[idx(x, y, z)] = NETHERRACK;
+        } else if (y <= floor + 3 && hash2(wx + y, wz) < 0.04) {
+          data[idx(x, y, z)] = NETHERRACK;
+        } else {
+          data[idx(x, y, z)] = AIR;
+        }
+      }
+      // cột glowstone ngẫu nhiên
+      if (hash2(wx * 17, wz * 23) < 0.015) {
+        const colH = 3 + (hash2(wx, wz) * 5 | 0);
+        for (let y = floor + 1; y <= floor + colH && y < NETHER_CEIL; y++) {
+          data[idx(x, y, z)] = GLOW;
+        }
+      }
     }
-    return { data, meshes: [], dirty: true, cx, cz };
+    return data;
   }
 
   getBlock(wx: number, wy: number, wz: number): number {
@@ -95,7 +146,7 @@ export class WorldMap {
   }
   isSolid(wx: number, wy: number, wz: number): boolean {
     const b = this.getBlock(wx, wy, wz);
-    return b !== AIR && !B[b]?.liquid;
+    return b !== AIR && !B[b]?.liquid && !B[b]?.portal;
   }
   topSolidY(wx: number, wz: number): number {
     for (let y = HEIGHT - 1; y >= 0; y--) {
@@ -126,6 +177,35 @@ export class WorldMap {
     const c = this.chunks.get(this.key(cx, cz));
     if (c) c.dirty = true;
   }
+
+  clearMeshes(): void {
+    this.chunks.clear();
+  }
 }
 
-export const world = new WorldMap();
+export class WorldManager {
+  currentDimension: DimensionId = 'overworld';
+  readonly worlds: Record<DimensionId, WorldMap> = {
+    overworld: new WorldMap('overworld'),
+    nether: new WorldMap('nether'),
+  };
+
+  get active(): WorldMap { return this.worlds[this.currentDimension]; }
+
+  switchDimension(d: DimensionId): WorldMap {
+    this.currentDimension = d;
+    world = this.worlds[d];
+    return world;
+  }
+}
+
+export const worldManager = new WorldManager();
+export let world = worldManager.worlds.overworld;
+
+export function switchWorldDimension(d: DimensionId): WorldMap {
+  return worldManager.switchDimension(d);
+}
+
+export function getCurrentDimension(): DimensionId {
+  return worldManager.currentDimension;
+}

@@ -1,7 +1,8 @@
-// Phá block, đặt block, tấn công mob, kích nổ TNT, cưỡi ngựa/thuyền, đặt thuyền
+// Phá block, đặt block, tấn công mob, kích nổ TNT, cưỡi ngựa/thuyền, đặt thuyền, kích hoạt portal
 import * as THREE from 'three';
 import { AIR, B, TOOLS, TNT, toolIsFast } from '@shared/blocks';
 import { world } from '@shared/world';
+import { findPortalFrameAt, activatePortal } from '@shared/portal';
 import { camera } from './scene';
 import { raycastBlock, raycastWater } from './raycast';
 import { heldItem, showBreakbar, hideBreakbar } from './ui';
@@ -123,6 +124,20 @@ export function interact(): void {
   }
 
   const it = heldItem();
+
+  // 2a. lửa mồi → kích hoạt portal obsidian
+  if (it.kind === 'igniter') {
+    const hit = raycastBlock();
+    if (hit) {
+      const frame = findPortalFrameAt(hit.x, hit.y, hit.z, world.getBlock.bind(world));
+      if (frame) {
+        activatePortal(frame, (x, y, z, id) => world.setBlock(x, y, z, id));
+        swingHand();
+        sndPlace(41);
+      }
+    }
+    return;
+  }
 
   // 2. đặt thuyền lên mặt nước
   if (it.kind === 'boat') {

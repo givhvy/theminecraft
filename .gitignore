@@ -15,3 +15,7 @@ Thumbs.db
 .DS_Store
 
 .vercel
+
+# Secrets
+.env
+.env.local

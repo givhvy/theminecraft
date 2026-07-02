@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { CHUNK, GRAVITY, MAX_MOBS, MAX_HORSES, SEA_LEVEL, HORSE_SPEED } from '@shared/config';
 import { terrainHeight } from '@shared/noise';
 import { moveEntity } from '@shared/physics';
-import { world } from '@shared/world';
+import { world, getCurrentDimension } from '@shared/world';
+import { isNearThemePark } from '@shared/themepark';
 import { scene, sunElevation } from './scene';
 import { player, damagePlayer, type Rideable } from './player';
 import { mobs } from './entities';
@@ -114,25 +115,29 @@ export class Mob implements Rideable {
       }
       this.group.add(head, body);
       this.parts = { head, body };
-    } else { // horse
+    } else { // horse — nâng cấp model chi tiết
       this.halfW = 0.45; this.height = 1.6; this.speed = 2.2; this.detect = 0;
       this.hp = 26;
-      const coat = 0x8a5a32, mane = 0x4a2f18;
-      const body = box(0.7, 0.7, 1.4, coat); body.position.y = 1.0;
-      const neck = box(0.3, 0.7, 0.35, coat); neck.position.set(0, 1.55, -0.62); neck.rotation.x = 0.4;
-      const head = box(0.36, 0.4, 0.62, coat, horseFace); head.position.set(0, 1.92, -0.92);
-      const maneM = box(0.12, 0.6, 0.3, mane); maneM.position.set(0, 1.7, -0.46);
-      const tail = box(0.14, 0.6, 0.14, mane); tail.position.set(0, 1.1, 0.75); tail.rotation.x = 0.5;
-      for (const [lx, lz] of [[-0.24, 0.5], [0.24, 0.5], [-0.24, -0.5], [0.24, -0.5]]) {
-        const leg = box(0.18, 0.65, 0.18, coat);
-        leg.position.set(lx, 0.65, lz);
-        leg.geometry.translate(0, -0.33, 0);
+      const coat = 0x8a5a32, mane = 0x4a2f18, hoof = 0x3a2818;
+      const body = box(0.75, 0.75, 1.45, coat); body.position.y = 1.0;
+      const neck = box(0.32, 0.75, 0.38, coat); neck.position.set(0, 1.58, -0.65); neck.rotation.x = 0.45;
+      const head = box(0.38, 0.42, 0.65, coat, horseFace); head.position.set(0, 1.95, -0.95);
+      const snout = box(0.28, 0.22, 0.28, 0xc4a882); snout.position.set(0, 1.82, -1.18);
+      const maneM = box(0.14, 0.65, 0.32, mane); maneM.position.set(0, 1.75, -0.48);
+      const tail = box(0.16, 0.65, 0.16, mane); tail.position.set(0, 1.05, 0.78); tail.rotation.x = 0.55;
+      for (const [lx, lz] of [[-0.26, 0.52], [0.26, 0.52], [-0.26, -0.52], [0.26, -0.52]]) {
+        const leg = box(0.2, 0.68, 0.2, coat);
+        leg.position.set(lx, 0.68, lz);
+        leg.geometry.translate(0, -0.34, 0);
+        const hoofM = box(0.22, 0.1, 0.22, hoof);
+        hoofM.position.set(lx, 0.05, lz);
         this.legs.push(leg);
-        this.group.add(leg);
+        this.group.add(leg, hoofM);
       }
-      // yên ngựa
-      const saddle = box(0.5, 0.12, 0.5, 0x9b3f2e); saddle.position.y = 1.42;
-      this.group.add(body, neck, head, maneM, tail, saddle);
+      const saddle = box(0.52, 0.14, 0.52, 0x9b3f2e); saddle.position.y = 1.44;
+      const stirrupL = box(0.06, 0.2, 0.06, 0x666666); stirrupL.position.set(-0.3, 1.0, 0);
+      const stirrupR = stirrupL.clone(); stirrupR.position.x = 0.3;
+      this.group.add(body, neck, head, snout, maneM, tail, saddle, stirrupL, stirrupR);
       this.parts = { head, body };
     }
     scene.add(this.group);
@@ -272,6 +277,7 @@ export class Mob implements Rideable {
 
 let spawnTimer = 0;
 function updateMobSpawning(dt: number): void {
+  if (getCurrentDimension() !== 'overworld') return;
   spawnTimer -= dt;
   if (spawnTimer > 0) return;
   spawnTimer = 3.5;
@@ -286,8 +292,11 @@ function updateMobSpawning(dt: number): void {
   const h = terrainHeight(x, z);
   if (h <= SEA_LEVEL) return;
 
-  // ngựa: ban ngày, trên cỏ
-  if (!night && horses < MAX_HORSES && Math.random() < 0.3 && h < 44) {
+  const nearPark = isNearThemePark(x, z);
+  const horseLimit = nearPark ? MAX_HORSES + 4 : MAX_HORSES;
+  const horseChance = nearPark ? 0.55 : 0.3;
+
+  if (!night && horses < horseLimit && Math.random() < horseChance && h < 44) {
     mobs.push(new Mob('horse', x + 0.5, h + 1.2, z + 0.5));
     return;
   }
