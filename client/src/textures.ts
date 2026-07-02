@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { rand01 } from '@shared/noise';
 
-export const TILE = 16, NTILES = 45;
+export const TILE = 16, NTILES = 46;
 export const tileBaseColor: [number, number, number][] = [];
 
 type TileFn = (x: number, y: number, r: number, g: number, b: number, a?: number) => number[] | void;
@@ -168,6 +168,13 @@ drawTile(44, [110, 78, 50], 10, (x, y) => {                        // mặt ch�
   const d = Math.hypot(x - 7.5, y - 7.5);
   if (d < 2) return [230, 90, 120];
   if (d < 3.4) return [70, 150, 60];
+});
+
+drawTile(45, [225, 90, 20], 20, (x, y, r, g, b) => {              // dung nham: vệt sáng chảy
+  const n = rand01((x / 3 | 0) * 23 + (y / 3 | 0) * 71);
+  if (n < 0.22) return [255, 210, 80];
+  if (n > 0.85) return [150, 35, 10];
+  return [r, g, b];
 });
 
 export const atlasTex = new THREE.CanvasTexture(atlasCanvas);

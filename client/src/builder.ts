@@ -5,6 +5,7 @@ import { STRUCTURES, type Structure } from '@shared/structures';
 import { player } from './player';
 import { buildInfoEl, uiEvents } from './ui';
 import { sndOpen, sndClose, sndClick, sndBuildTick, sndBuildDone } from './audio';
+import { t, structName, structDesc } from './i18n';
 
 export let builderOpen = false;
 const builderEl = document.getElementById('builder')!;
@@ -13,20 +14,24 @@ const buildGrid = document.getElementById('buildgrid')!;
 type QueuedBlock = [number, number, number, number];
 let buildQueue: QueuedBlock[] = [];
 let buildTotal = 0;
-let buildName = '';
+let buildStruct: Structure | null = null;
 let tickAcc = 0;
 
-for (const s of STRUCTURES) {
-  const card = document.createElement('div');
-  card.className = 'buildcard';
-  card.innerHTML = `<div class="emoji">${s.emoji}</div><div class="name">${s.name}</div><div class="desc">${s.desc}</div>`;
-  card.addEventListener('click', () => {
-    sndClick();
-    startBuild(s);
-    toggleBuilder();
-  });
-  buildGrid.appendChild(card);
+export function renderBuildCards(): void {
+  buildGrid.innerHTML = '';
+  for (const s of STRUCTURES) {
+    const card = document.createElement('div');
+    card.className = 'buildcard';
+    card.innerHTML = `<div class="emoji">${s.emoji}</div><div class="name">${structName(s)}</div><div class="desc">${structDesc(s)}</div>`;
+    card.addEventListener('click', () => {
+      sndClick();
+      startBuild(s);
+      toggleBuilder();
+    });
+    buildGrid.appendChild(card);
+  }
 }
+renderBuildCards();
 
 export function toggleBuilder(): void {
   builderOpen = !builderOpen;
@@ -74,7 +79,7 @@ function startBuild(struct: Structure): void {
 
   buildQueue = queue;
   buildTotal = queue.length;
-  buildName = struct.name;
+  buildStruct = struct;
 }
 
 export function updateBuilder(dt: number): void {
@@ -88,9 +93,10 @@ export function updateBuilder(dt: number): void {
   }
   if (tickAcc > 0.09) { tickAcc = 0; sndBuildTick(); }
   const done = buildTotal - buildQueue.length;
-  buildInfoEl.textContent = `🤖 Đang xây ${buildName}… ${Math.round(done / buildTotal * 100)}%`;
+  const name = buildStruct ? structName(buildStruct) : '';
+  buildInfoEl.textContent = `${t('building')} ${name}… ${Math.round(done / buildTotal * 100)}%`;
   if (buildQueue.length === 0) {
-    buildInfoEl.textContent = `✅ Đã xây xong ${buildName}!`;
+    buildInfoEl.textContent = `${t('builtDone')} ${name}!`;
     sndBuildDone();
     setTimeout(() => { if (buildQueue.length === 0) buildInfoEl.textContent = ''; }, 3000);
   }

@@ -4,12 +4,12 @@ import { GRAVITY, JUMP_SPEED, WALK_SPEED, FLY_SPEED, SEA_LEVEL } from '@shared/c
 import { AIR } from '@shared/blocks';
 import { world } from '@shared/world';
 import { terrainHeight } from '@shared/noise';
-import { moveEntity, inWater } from '@shared/physics';
+import { moveEntity, inWater, inLava } from '@shared/physics';
 import { camera } from './scene';
 import { updateHearts, flashVignette, deathscreen } from './ui';
 import {
   sndHurt, sndStep, sndJump, sndLand, sndSplash,
-  sndGallop, sndPaddle, sndDismount,
+  sndGallop, sndPaddle, sndDismount, sndSizzle,
 } from './audio';
 
 /** thực thể có thể cưỡi (ngựa hoặc thuyền) */
@@ -92,6 +92,7 @@ export function dismount(): void {
 type Keys = Record<string, boolean | undefined>;
 
 let rideStepDist = 0;
+let lavaTimer = 0;
 
 function updateRiding(dt: number, keys: Keys): void {
   const e = player.riding!;
@@ -137,12 +138,19 @@ export function updatePlayer(dt: number, keys: Keys): void {
   if (player.riding) {
     updateRiding(dt, keys);
   } else {
-    const swimming = inWater(player.pos.x, player.pos.y + 0.4, player.pos.z);
+    const inLavaNow = inLava(player.pos.x, player.pos.y + 0.4, player.pos.z) ||
+      inLava(player.pos.x, player.pos.y, player.pos.z);
+    const swimming = inWater(player.pos.x, player.pos.y + 0.4, player.pos.z) || inLavaNow;
     if (swimming !== player.wasInWater) {
       if (swimming) sndSplash();
       player.wasInWater = swimming;
     }
-    const speed = player.flying ? FLY_SPEED : (swimming ? WALK_SPEED * 0.55 : WALK_SPEED);
+    // dung nham: sát thương liên tục + tiếng xèo xèo
+    if (inLavaNow && !player.flying) {
+      lavaTimer -= dt;
+      if (lavaTimer <= 0) { lavaTimer = 0.5; damagePlayer(2); sndSizzle(); }
+    } else lavaTimer = 0;
+    const speed = player.flying ? FLY_SPEED : (swimming ? WALK_SPEED * (inLavaNow ? 0.4 : 0.55) : WALK_SPEED);
     const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
     let fwd = 0, strafe = 0;
     if (keys['KeyW']) fwd += 1;

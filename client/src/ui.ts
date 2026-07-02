@@ -1,7 +1,8 @@
 // HUD: hotbar, kho đồ, tim, thanh phá block, overlay, info
-import { B, TOOLS, TNT, GLOW, type ToolId } from '@shared/blocks';
+import { B, TNT, GLOW, TOOLS, type ToolId } from '@shared/blocks';
 import { tileToDataURL, drawToolIcon } from './textures';
 import { sndSlot, sndOpen, sndClose, sndClick } from './audio';
+import { t, blockName, toolName } from './i18n';
 
 export const uiEvents = new EventTarget();
 
@@ -32,7 +33,7 @@ export function itemIcon(item: Item): string {
   return iconCache[k];
 }
 export function itemName(item: Item): string {
-  return item.kind === 'tool' ? TOOLS[item.id].name : item.kind === 'boat' ? 'Thuyền' : B[item.id].name;
+  return item.kind === 'tool' ? toolName(item.id) : item.kind === 'boat' ? t('boat') : blockName(item.id);
 }
 
 const hotbarEl = document.getElementById('hotbar')!;
@@ -57,7 +58,8 @@ renderHotbar();
 export let inventoryOpen = false;
 const invEl = document.getElementById('inventory')!;
 const invGrid = document.getElementById('invgrid')!;
-{
+export function renderInventory(): void {
+  invGrid.innerHTML = '';
   const entries: Item[] = (Object.keys(TOOLS) as ToolId[]).map(id => ({ kind: 'tool', id }));
   entries.push({ kind: 'boat' });
   for (const id in B) {
@@ -78,6 +80,7 @@ const invGrid = document.getElementById('invgrid')!;
     invGrid.appendChild(cell);
   }
 }
+renderInventory();
 export function toggleInventory(): void {
   inventoryOpen = !inventoryOpen;
   invEl.style.display = inventoryOpen ? 'block' : 'none';

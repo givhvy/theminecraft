@@ -1,8 +1,9 @@
 // Zombie, Creeper & Ngựa: mô hình, AI, sát thương, âm thanh
 import * as THREE from 'three';
-import { GRAVITY, MAX_MOBS, MAX_HORSES, SEA_LEVEL, HORSE_SPEED } from '@shared/config';
+import { CHUNK, GRAVITY, MAX_MOBS, MAX_HORSES, SEA_LEVEL, HORSE_SPEED } from '@shared/config';
 import { terrainHeight } from '@shared/noise';
 import { moveEntity } from '@shared/physics';
+import { world } from '@shared/world';
 import { scene, sunElevation } from './scene';
 import { player, damagePlayer, type Rideable } from './player';
 import { mobs } from './entities';
@@ -148,6 +149,9 @@ export class Mob implements Rideable {
       this.legs.forEach((leg, i) => { leg.rotation.x = i % 2 === 0 ? sw : -sw; });
       return;
     }
+
+    // đứng yên nếu chunk chưa sinh — tránh kích hoạt sinh chunk giữa frame gây giật
+    if (!world.peekChunk(Math.floor(this.pos.x / CHUNK), Math.floor(this.pos.z / CHUNK))) return;
 
     const toPlayer = new THREE.Vector3().subVectors(player.pos, this.pos);
     const dist = toPlayer.length();

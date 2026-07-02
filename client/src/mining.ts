@@ -1,6 +1,6 @@
 // Phá block, đặt block, tấn công mob, kích nổ TNT, cưỡi ngựa/thuyền, đặt thuyền
 import * as THREE from 'three';
-import { AIR, B, TOOLS, TNT, WATER, toolIsFast } from '@shared/blocks';
+import { AIR, B, TOOLS, TNT, toolIsFast } from '@shared/blocks';
 import { world } from '@shared/world';
 import { camera } from './scene';
 import { raycastBlock, raycastWater } from './raycast';
@@ -140,7 +140,7 @@ export function interact(): void {
   if (!hit) return;
   const px = hit.x + hit.nx, py = hit.y + hit.ny, pz = hit.z + hit.nz;
   const cur = world.getBlock(px, py, pz);
-  if (cur !== AIR && cur !== WATER) return;
+  if (cur !== AIR && !B[cur]?.liquid) return;
   const overlap =
     px + 1 > player.pos.x - player.halfW && px < player.pos.x + player.halfW &&
     pz + 1 > player.pos.z - player.halfW && pz < player.pos.z + player.halfW &&

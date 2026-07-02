@@ -6,7 +6,6 @@ import * as ui from './ui';
 import { mining, interact } from './mining';
 import { toggleBuilder } from './builder';
 import * as builderMod from './builder';
-import { audio } from './audio';
 
 export const keys: Record<string, boolean | undefined> = {};
 let locked = false;
@@ -17,7 +16,7 @@ function refreshOverlay(): void {
   overlay.style.display = (locked || anyModalOpen() || player.dead) ? 'none' : 'flex';
 }
 
-overlay.addEventListener('click', () => { audio(); canvas.requestPointerLock(); });
+// nút "Chơi" trong menu.ts đảm nhận việc join + requestPointerLock
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === canvas;
   refreshOverlay();
@@ -33,6 +32,7 @@ document.addEventListener('mousemove', (e) => {
   player.pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, player.pitch));
 });
 document.addEventListener('keydown', (e) => {
+  if (e.target instanceof HTMLInputElement) return; // đang gõ vào ô nhập tên/tài khoản
   keys[e.code] = true;
   if (e.code === 'KeyF' && locked && !player.riding) { player.flying = !player.flying; player.vel.y = 0; }
   if (e.code === 'KeyE' && (locked || ui.inventoryOpen)) toggleInventory();

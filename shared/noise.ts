@@ -22,6 +22,24 @@ export function fbm(x: number, z: number): number {
   for (let i = 0; i < 4; i++) { sum += noise2(x * freq, z * freq) * amp; tot += amp; amp *= 0.5; freq *= 2; }
   return sum / tot;
 }
+export function hash3(x: number, y: number, z: number): number {
+  let h = (x * 374761393 + y * 2246822519 + z * 668265263 + SEED * 144665) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+export function noise3(x: number, y: number, z: number): number {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const xf = x - xi, yf = y - yi, zf = z - zi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), w = zf * zf * (3 - 2 * zf);
+  const c000 = hash3(xi, yi, zi),     c100 = hash3(xi + 1, yi, zi);
+  const c010 = hash3(xi, yi + 1, zi), c110 = hash3(xi + 1, yi + 1, zi);
+  const c001 = hash3(xi, yi, zi + 1),     c101 = hash3(xi + 1, yi, zi + 1);
+  const c011 = hash3(xi, yi + 1, zi + 1), c111 = hash3(xi + 1, yi + 1, zi + 1);
+  return lerp(
+    lerp(lerp(c000, c100, u), lerp(c010, c110, u), v),
+    lerp(lerp(c001, c101, u), lerp(c011, c111, u), v), w);
+}
+
 export function terrainHeight(wx: number, wz: number): number {
   const base = fbm(wx * 0.012, wz * 0.012);
   const detail = fbm(wx * 0.06 + 100, wz * 0.06 + 100);

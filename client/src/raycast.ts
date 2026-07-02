@@ -1,7 +1,7 @@
 // Raycast voxel (DDA) từ camera
 import * as THREE from 'three';
 import { REACH } from '@shared/config';
-import { AIR, WATER } from '@shared/blocks';
+import { AIR, WATER, B } from '@shared/blocks';
 import { world } from '@shared/world';
 import { camera } from './scene';
 
@@ -21,7 +21,7 @@ export function raycastBlock(): BlockHit | null {
   let nx = 0, ny = 0, nz = 0, t = 0;
   while (t <= REACH) {
     const b = world.getBlock(x, y, z);
-    if (b !== AIR && b !== WATER) return { x, y, z, nx, ny, nz, t, block: b };
+    if (b !== AIR && !B[b]?.liquid) return { x, y, z, nx, ny, nz, t, block: b };
     if (tMaxX < tMaxY && tMaxX < tMaxZ) { x += stepX; t = tMaxX; tMaxX += tDeltaX; nx = -stepX; ny = 0; nz = 0; }
     else if (tMaxY < tMaxZ) { y += stepY; t = tMaxY; tMaxY += tDeltaY; nx = 0; ny = -stepY; nz = 0; }
     else { z += stepZ; t = tMaxZ; tMaxZ += tDeltaZ; nx = 0; ny = 0; nz = -stepZ; }

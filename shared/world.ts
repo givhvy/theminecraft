@@ -1,7 +1,10 @@
 // Dữ liệu thế giới: chunk, sinh địa hình, get/set block (logic thuần, không phụ thuộc DOM/THREE)
 import { CHUNK, HEIGHT, SEA_LEVEL } from './config.js';
-import { AIR, WATER, BEDROCK } from './blocks.js';
-import { hash2, terrainHeight } from './noise.js';
+import { AIR, WATER, BEDROCK, LAVA, B } from './blocks.js';
+import { hash2, noise3, terrainHeight } from './noise.js';
+
+/** dung nham lấp đầy hang động từ y này trở xuống */
+export const LAVA_LEVEL = 10;
 
 export interface Chunk {
   data: Uint8Array;
@@ -28,6 +31,11 @@ export class WorldMap {
     return c;
   }
 
+  /** đọc chunk nếu đã sinh, không kích hoạt sinh mới (cho vòng lặp render tránh giật) */
+  peekChunk(cx: number, cz: number): Chunk | undefined {
+    return this.chunks.get(this.key(cx, cz));
+  }
+
   generateChunk(cx: number, cz: number): Chunk {
     const data = new Uint8Array(CHUNK * HEIGHT * CHUNK);
     const idx = (x: number, y: number, z: number) => (y * CHUNK + z) * CHUNK + x;
@@ -44,6 +52,10 @@ export class WorldMap {
           else if (y < 28 && r >= 0.012 && r < 0.018) b = 15;
           else if (y < 18 && r >= 0.018 && r < 0.022) b = 16;
           else if (y < 12 && r >= 0.022 && r < 0.0245) b = 17;
+          // hang động: khoét bằng noise 3D, dưới LAVA_LEVEL lấp dung nham
+          if (y >= 2 && noise3(wx * 0.08, y * 0.13, wz * 0.08) > 0.72) {
+            b = y <= LAVA_LEVEL ? LAVA : AIR;
+          }
         }
         if (y === 0) b = BEDROCK;
         data[idx(x, y, z)] = b;
@@ -83,7 +95,7 @@ export class WorldMap {
   }
   isSolid(wx: number, wy: number, wz: number): boolean {
     const b = this.getBlock(wx, wy, wz);
-    return b !== AIR && b !== WATER;
+    return b !== AIR && !B[b]?.liquid;
   }
   topSolidY(wx: number, wz: number): number {
     for (let y = HEIGHT - 1; y >= 0; y--) {

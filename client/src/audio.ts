@@ -76,6 +76,7 @@ export function sndHurt(): void { sfxTone(160, 0.25, 'sawtooth', 0.16, -80); }
 export function sndMobDeath(): void { sfxTone(220, 0.4, 'sawtooth', 0.14, -160); }
 export function sndExplode(): void { sfxNoise(0.7, 350, 0.4); sfxTone(60, 0.5, 'sine', 0.3, -30); }
 export function sndFuse(): void { sfxNoise(0.35, 4200, 0.09, 'highpass'); }
+export function sndSizzle(): void { sfxNoise(0.3, 2600, 0.16, 'highpass'); sfxTone(90, 0.22, 'sawtooth', 0.07, -30); }
 export function sndZombieGroan(vol = 0.1): void {
   sfxTone(vary(85), 0.5, 'sawtooth', vol, 18);
   sfxTone(vary(64), 0.55, 'sawtooth', vol * 0.6, -10);

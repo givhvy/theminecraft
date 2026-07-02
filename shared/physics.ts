@@ -1,6 +1,6 @@
 // Va chạm AABB và di chuyển thực thể (logic thuần, không phụ thuộc THREE)
 import { world } from './world.js';
-import { WATER } from './blocks.js';
+import { WATER, LAVA } from './blocks.js';
 
 export interface Vec3Like { x: number; y: number; z: number }
 export interface EntityLike {
@@ -42,6 +42,10 @@ export function moveEntity(e: EntityLike, dt: number): MoveResult {
 
 export function inWater(x: number, y: number, z: number): boolean {
   return world.getBlock(Math.floor(x), Math.floor(y), Math.floor(z)) === WATER;
+}
+
+export function inLava(x: number, y: number, z: number): boolean {
+  return world.getBlock(Math.floor(x), Math.floor(y), Math.floor(z)) === LAVA;
 }
 
 /** tìm mặt nước (y của block nước cao nhất) quanh vị trí, -1 nếu không có */

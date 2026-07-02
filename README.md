@@ -1,8 +1,21 @@
 # TheMinecraft
 
-Minecraft clone full stack mức **indie production**: client **TypeScript + Three.js + Vite**, server **Node.js authoritative** (Express + WebSocket), test tự động bằng **Vitest**.
+Minecraft clone full stack mức **indie production**: client **TypeScript + Three.js + Vite**, server **Node.js authoritative** (Express + WebSocket), test tự động bằng **Vitest**. Deploy được lên **Vercel** (WebSocket beta trên Fluid compute).
 
 ## Tính năng
+
+### 👥 Multiplayer tới 10 người
+- 10 profile slot (P1–P10) trong **cùng một thế giới**; mỗi người vào server nhận slot trống thấp nhất
+- Avatar voxel màu riêng theo slot + name tag; vị trí đồng bộ 20Hz, nội suy mượt phía client
+- **Tài khoản tuỳ chọn**: đăng ký/đăng nhập (mật khẩu scrypt, token HMAC) hoặc chơi khách không cần tài khoản
+- Server validate mọi block edit rồi broadcast realtime; người thứ 11 bị từ chối lịch sự
+- Tự kết nối lại khi rớt mạng; world tự seed lại từ localStorage nếu server trống (cold start)
+
+### 🌐 Song ngữ EN/VI
+Mặc định English, nút chuyển EN/VI góc phải trên — dịch toàn bộ UI, tên block, dụng cụ, công trình AI Builder.
+
+### 🔥 Lòng đất: hang động, dung nham, kim cương
+Hang động 3D noise dưới mặt đất; **dung nham** phát sáng lấp hang sâu (y ≤ 10) gây sát thương + tiếng xèo xèo; quặng than/sắt/vàng/**kim cương** theo độ sâu — đào càng sâu càng quý.
 
 ### 🤖 AI Builder (phím B)
 Chọn công trình — AI xây dần từng block trước mặt bạn, tự đổ móng trên địa hình dốc:
@@ -39,7 +52,10 @@ shared/            # logic thuần dùng chung client + server + tests
   physics.ts       # va chạm AABB
   structures.ts    # 9 công trình AI Builder
 server/
-  index.ts         # Express + WebSocket, validate & lưu world
+  app.ts           # Express + WebSocket: world, multiplayer, tài khoản
+  index.ts         # entry chạy local (listen cổng)
+api/
+  index.ts         # entry Vercel Function (WebSocket beta)
 client/
   index.html
   css/style.css
@@ -52,11 +68,15 @@ tests/             # 63 test Vitest
 ```bash
 npm install
 npm run dev        # backend :3000 + Vite dev :5173 (mở http://localhost:5173)
-npm test           # chạy 63 test
+npm test           # chạy 68 test
 npm run typecheck  # kiểm tra type TypeScript
 npm run build      # build production vào dist/
 npm start          # chạy production (serve dist/ + API + WS)
 ```
+
+## Deploy Vercel
+
+Repo có sẵn `vercel.json` + `api/index.ts`: import project từ GitHub vào Vercel là chạy — static client từ `dist/`, còn `/api/*` và `/ws` (WebSocket, public beta trên Fluid compute) do function xử lý. Lưu ý serverless không có đĩa bền: world giữ trong bộ nhớ khi có người chơi và client tự seed lại từ localStorage sau cold start; đặt env `AUTH_SECRET` để token đăng nhập ổn định.
 
 ## Điều khiển
 

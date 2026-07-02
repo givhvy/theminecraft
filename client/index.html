@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>TheMinecraft - Voxel World</title>
@@ -15,17 +15,38 @@
 <div id="breakbar"><div></div></div>
 <div id="vignette"></div>
 <div id="watertint"></div>
-<div id="savestate">✔ Đã lưu thế giới</div>
-<div id="inventory"><h2>Chọn block / dụng cụ / nội thất cho ô đang chọn (E để đóng)</h2><div id="invgrid"></div></div>
-<div id="builder"><h2>🤖 AI Builder — chọn công trình để xây trước mặt bạn (B để đóng)</h2><div id="buildgrid"></div></div>
-<div id="deathscreen"><h1>Bạn đã chết!</h1><button id="respawnbtn">Hồi sinh</button></div>
+<div id="savestate">✔ World saved</div>
+<div id="langtoggle"><span data-lang="en">EN</span><span data-lang="vi">VI</span></div>
+<div id="inventory"><h2 id="invtitle"></h2><div id="invgrid"></div></div>
+<div id="builder"><h2 id="buildtitle"></h2><div id="buildgrid"></div></div>
+<div id="deathscreen"><h1 id="deathtitle"></h1><button id="respawnbtn"></button></div>
 <div id="overlay">
   <h1>TheMinecraft</h1>
-  <p><b>WASD</b> di chuyển · <b>Space</b> nhảy/bơi · <b>F</b> bay · <b>E</b> kho đồ · <b>B</b> 🤖 AI Builder</p>
-  <p><b>Giữ chuột trái</b> phá block / tấn công · <b>Chuột phải</b> đặt block / cưỡi 🐴 lên 🛶 · <b>Shift</b> xuống</p>
-  <p><b>1-9</b> / lăn chuột chọn ô · Đập vào <b>TNT</b> để kích nổ 💥</p>
-  <p>Cẩn thận <b style="color:#7fc97f">zombie</b> và <b style="color:#6ee06e">creeper</b> vào ban đêm!</p>
-  <div class="start">Nhấp để chơi</div>
+  <p id="ctrl1"></p>
+  <p id="ctrl2"></p>
+  <p id="ctrl3"></p>
+  <p id="ctrl4"></p>
+  <div id="joinbox">
+    <input id="nameinput" maxlength="16" autocomplete="off">
+    <div class="start" id="playbtn">Click to play</div>
+    <div id="joinstatus"></div>
+    <div id="accountbox">
+      <div id="accounthead"></div>
+      <div id="accountforms">
+        <input id="accuser" maxlength="16" autocomplete="username">
+        <input id="accpass" type="password" autocomplete="current-password">
+        <div class="accbtns">
+          <button id="loginbtn"></button>
+          <button id="registerbtn"></button>
+        </div>
+        <div id="accstatus"></div>
+      </div>
+      <div id="accloggedin" style="display:none">
+        <span id="accwho"></span> <button id="logoutbtn"></button>
+      </div>
+      <div id="guesthint"></div>
+    </div>
+  </div>
 </div>
 <script type="module" src="./src/main.ts"></script>
 </body>

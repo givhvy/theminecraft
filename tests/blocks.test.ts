@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { B, TOOLS, isValidBlockId, toolIsFast, AIR } from '@shared/blocks';
 
-const NTILES = 45; // phải khớp với client/src/textures.ts
+const NTILES = 46; // phải khớp với client/src/textures.ts
 
 describe('blocks', () => {
   it('mọi tile index nằm trong atlas', () => {
@@ -13,10 +13,11 @@ describe('blocks', () => {
       }
     }
   });
-  it('mọi block có tên và độ cứng hợp lệ', () => {
+  it('mọi block có tên VI + EN và độ cứng hợp lệ', () => {
     for (const id in B) {
       const def = B[Number(id)];
       expect(def.name.length).toBeGreaterThan(0);
+      expect(def.nameEn.length).toBeGreaterThan(0);
       expect(def.hardness).toBeGreaterThanOrEqual(0);
     }
   });

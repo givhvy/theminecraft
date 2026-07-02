@@ -11,8 +11,10 @@ export type BlockPlacement = [x: number, y: number, z: number, id: number];
 export interface Structure {
   id: string;
   emoji: string;
-  name: string;
+  name: string;      // tiếng Việt
+  nameEn: string;    // English
   desc: string;
+  descEn: string;
   gen: () => BlockPlacement[];
 }
 
@@ -314,13 +316,13 @@ function dragonStatue(): BlockPlacement[] {
 }
 
 export const STRUCTURES: Structure[] = [
-  { id: 'modern',     emoji: '🏡', name: 'Nhà hiện đại',   desc: 'Biệt thự 2 tầng kính + bê tông, full nội thất, hồ bơi', gen: modernHouse },
-  { id: 'house',      emoji: '🏠', name: 'Nhà gỗ',         desc: 'Nhà ván gỗ ấm cúng có giường, bàn ghế, kệ sách', gen: house },
-  { id: 'castle',     emoji: '🏰', name: 'Lâu đài',        desc: 'Tường thành, 4 tháp canh, cổng và sảnh chính', gen: castle },
-  { id: 'dungeon',    emoji: '🐉', name: 'Hầm ngục rồng',  desc: 'Đại sảnh tối tăm, kho báu và tượng rồng obsidian', gen: dragonDungeon },
-  { id: 'tower',      emoji: '🧙', name: 'Tháp phù thủy',  desc: 'Tháp gạch cao với cửa sổ xoắn ốc và vòm kính', gen: wizardTower },
-  { id: 'pyramid',    emoji: '🔺', name: 'Kim tự tháp',    desc: 'Kim tự tháp cát ẩn giấu phòng kho báu', gen: pyramid },
-  { id: 'bridge',     emoji: '🌉', name: 'Cầu đá',         desc: 'Cầu gạch dài 30 block có trụ đèn', gen: bridge },
-  { id: 'lighthouse', emoji: '🗼', name: 'Hải đăng',       desc: 'Tháp sọc đỏ trắng với đèn biển rực sáng', gen: lighthouse },
-  { id: 'dragon',     emoji: '🐲', name: 'Tượng rồng',     desc: 'Rồng obsidian khổng lồ xoè cánh, mắt phát sáng', gen: dragonStatue },
+  { id: 'modern',     emoji: '🏡', name: 'Nhà hiện đại',   nameEn: 'Modern House',   desc: 'Biệt thự 2 tầng kính + bê tông, full nội thất, hồ bơi', descEn: '2-story glass & concrete villa, fully furnished, with a pool', gen: modernHouse },
+  { id: 'house',      emoji: '🏠', name: 'Nhà gỗ',         nameEn: 'Wooden House',   desc: 'Nhà ván gỗ ấm cúng có giường, bàn ghế, kệ sách', descEn: 'Cozy plank house with bed, table, chairs and bookshelf', gen: house },
+  { id: 'castle',     emoji: '🏰', name: 'Lâu đài',        nameEn: 'Castle',         desc: 'Tường thành, 4 tháp canh, cổng và sảnh chính', descEn: 'Walls, 4 watchtowers, gate and great hall', gen: castle },
+  { id: 'dungeon',    emoji: '🐉', name: 'Hầm ngục rồng',  nameEn: 'Dragon Dungeon', desc: 'Đại sảnh tối tăm, kho báu và tượng rồng obsidian', descEn: 'Dark hall with treasure and an obsidian dragon statue', gen: dragonDungeon },
+  { id: 'tower',      emoji: '🧙', name: 'Tháp phù thủy',  nameEn: 'Wizard Tower',   desc: 'Tháp gạch cao với cửa sổ xoắn ốc và vòm kính', descEn: 'Tall brick tower with spiral windows and glass dome', gen: wizardTower },
+  { id: 'pyramid',    emoji: '🔺', name: 'Kim tự tháp',    nameEn: 'Pyramid',        desc: 'Kim tự tháp cát ẩn giấu phòng kho báu', descEn: 'Sand pyramid hiding a treasure chamber', gen: pyramid },
+  { id: 'bridge',     emoji: '🌉', name: 'Cầu đá',         nameEn: 'Stone Bridge',   desc: 'Cầu gạch dài 30 block có trụ đèn', descEn: '30-block brick bridge with lamp posts', gen: bridge },
+  { id: 'lighthouse', emoji: '🗼', name: 'Hải đăng',       nameEn: 'Lighthouse',     desc: 'Tháp sọc đỏ trắng với đèn biển rực sáng', descEn: 'Red-and-white striped tower with a blazing beacon', gen: lighthouse },
+  { id: 'dragon',     emoji: '🐲', name: 'Tượng rồng',     nameEn: 'Dragon Statue',  desc: 'Rồng obsidian khổng lồ xoè cánh, mắt phát sáng', descEn: 'Giant obsidian dragon with spread wings and glowing eyes', gen: dragonStatue },
 ];
