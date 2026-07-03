@@ -2,6 +2,29 @@
 import { B, type BlockMat } from '@shared/blocks';
 
 let ctx: AudioContext | null = null;
+let master: GainNode | null = null;
+
+/** bus master: compressor làm mềm đỉnh + delay ngắn tạo cảm giác không gian */
+function masterBus(c: AudioContext): GainNode {
+  if (master) return master;
+  master = c.createGain();
+  master.gain.value = 0.9;
+  const comp = c.createDynamicsCompressor();
+  comp.threshold.value = -18; comp.knee.value = 22; comp.ratio.value = 5;
+  comp.attack.value = 0.004; comp.release.value = 0.16;
+  // "không khí": echo rất nhẹ, lọc tối để không nghe vang máy móc
+  const delay = c.createDelay(0.3);
+  delay.delayTime.value = 0.09;
+  const fb = c.createGain(); fb.gain.value = 0.18;
+  const wet = c.createGain(); wet.gain.value = 0.14;
+  const damp = c.createBiquadFilter(); damp.type = 'lowpass'; damp.frequency.value = 1600;
+  delay.connect(damp).connect(fb).connect(delay);
+  master.connect(delay); delay.connect(wet);
+  master.connect(comp); wet.connect(comp);
+  comp.connect(c.destination);
+  return master;
+}
+
 export function audio(): AudioContext {
   if (!ctx) ctx = new AudioContext();
   if (ctx.state === 'suspended') void ctx.resume();
@@ -14,9 +37,11 @@ export function sfxTone(freq: number, dur: number, type: OscillatorType = 'squar
     const o = c.createOscillator(), g = c.createGain();
     o.type = type; o.frequency.setValueAtTime(freq, c.currentTime);
     if (slide) o.frequency.linearRampToValueAtTime(Math.max(freq + slide, 20), c.currentTime + dur);
-    g.gain.setValueAtTime(vol, c.currentTime);
+    // attack 5ms tránh click đầu âm
+    g.gain.setValueAtTime(0.0001, c.currentTime);
+    g.gain.linearRampToValueAtTime(vol, c.currentTime + 0.005);
     g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
-    o.connect(g).connect(c.destination);
+    o.connect(g).connect(masterBus(c));
     o.start(); o.stop(c.currentTime + dur);
   } catch { /* audio bị chặn trước tương tác đầu tiên */ }
 }
@@ -26,11 +51,12 @@ export function sfxNoise(dur: number, filterFreq = 1000, vol = 0.2, type: Biquad
     const n = Math.floor(c.sampleRate * dur);
     const buf = c.createBuffer(1, n, c.sampleRate);
     const d = buf.getChannelData(0);
-    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    // decay mũ nghe tự nhiên hơn tuyến tính
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-3.2 * (i / n));
     const src = c.createBufferSource(); src.buffer = buf;
-    const f = c.createBiquadFilter(); f.type = type; f.frequency.value = filterFreq;
+    const f = c.createBiquadFilter(); f.type = type; f.frequency.value = filterFreq; f.Q.value = 0.8;
     const g = c.createGain(); g.gain.value = vol;
-    src.connect(f).connect(g).connect(c.destination);
+    src.connect(f).connect(g).connect(masterBus(c));
     src.start();
   } catch { /* noop */ }
 }
@@ -51,20 +77,24 @@ function matOf(blockId: number) { return (B[blockId] && MAT_SFX[B[blockId].mat])
 
 export function sndBreak(blockId: number): void {
   const def = B[blockId], m = matOf(blockId);
-  sfxNoise(0.12, vary(m.f), m.vol);
+  sfxNoise(0.13, vary(m.f), m.vol);
+  sfxNoise(0.09, vary(m.f * 0.35), m.vol * 0.6); // tiếng trầm vỡ vụn
   if (def?.mat === 'glass') { sfxNoise(0.18, 4500, 0.12, 'highpass'); sfxTone(2400, 0.1, 'triangle', 0.06, -600); }
   if (def?.mat === 'wood') sfxTone(vary(160), 0.07, 'square', 0.07);
   if (def?.mat === 'metal') sfxTone(vary(900), 0.12, 'triangle', 0.08, -200);
   if (def?.mat === 'cloth') sfxNoise(0.16, 500, 0.1);
+  if (def?.mat === 'stone') sfxNoise(0.16, vary(300), 0.1); // đá rơi lộp cộp
 }
 export function sndPlace(blockId: number): void {
   const m = matOf(blockId);
   sfxNoise(0.06, vary(m.f * 0.8), m.vol * 0.7);
-  sfxTone(vary(m.f * 0.3), 0.06, 'square', 0.06);
+  sfxNoise(0.08, vary(240), 0.08); // thịch trầm khi đặt xuống
 }
 export function sndStep(blockId: number): void {
+  // hai lớp gót-mũi lệch nhau như bước chân thật
   const m = matOf(blockId);
-  sfxNoise(0.05, vary(m.f * 0.7), 0.045);
+  sfxNoise(0.045, vary(m.f * 0.7), 0.04);
+  setTimeout(() => sfxNoise(0.035, vary(m.f * 0.5), 0.028), 40 + Math.random() * 25);
 }
 export function sndJump(): void { sfxNoise(0.07, 900, 0.04); }
 export function sndLand(force = 1): void { sfxNoise(0.1, 500, Math.min(0.08 * force, 0.25)); }
@@ -80,6 +110,31 @@ export function sndSizzle(): void { sfxNoise(0.3, 2600, 0.16, 'highpass'); sfxTo
 export function sndZombieGroan(vol = 0.1): void {
   sfxTone(vary(85), 0.5, 'sawtooth', vol, 18);
   sfxTone(vary(64), 0.55, 'sawtooth', vol * 0.6, -10);
+}
+
+// ---- động vật ----
+export function sndOink(vol = 0.1): void {
+  sfxTone(vary(240), 0.12, 'sawtooth', vol, 90);
+  setTimeout(() => sfxTone(vary(200), 0.1, 'sawtooth', vol * 0.7, -60), 120);
+}
+export function sndMoo(vol = 0.1): void {
+  sfxTone(vary(160), 0.5, 'sawtooth', vol, -40);
+  sfxTone(vary(85), 0.55, 'sawtooth', vol * 0.6, -15);
+}
+export function sndCluck(vol = 0.08): void {
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => sfxTone(vary(950), 0.05, 'square', vol * (1 - i * 0.2), 250), i * 90);
+  }
+}
+export function sndBaa(vol = 0.1): void {
+  // rung nhẹ như tiếng be be
+  for (let i = 0; i < 4; i++) {
+    setTimeout(() => sfxTone(vary(520), 0.09, 'sawtooth', vol * 0.8, i % 2 ? 40 : -40), i * 70);
+  }
+}
+export function sndEggPop(): void {
+  sfxNoise(0.06, 1800, 0.1);
+  sfxTone(700, 0.08, 'triangle', 0.08, 300);
 }
 
 // ---- ngựa & thuyền ----

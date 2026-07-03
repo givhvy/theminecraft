@@ -1,5 +1,6 @@
 // Renderer, camera, ánh sáng, bầu trời, ngày/đêm, mây — nâng cấp ACES + dimension visuals
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { CHUNK, RENDER_DIST, DAY_LENGTH } from '@shared/config';
 import { rand01 } from '@shared/noise';
 import type { DimensionId } from '@shared/dimensions';
@@ -15,6 +16,9 @@ renderer.toneMappingExposure = 1.15;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 export const scene = new THREE.Scene();
+// env map cho vật liệu PBR (kim loại/kim cương trên tay phản chiếu)
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 export const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 700);
 scene.add(camera);
 
@@ -35,6 +39,20 @@ scene.add(sun); scene.add(sun.target);
 
 const ambient = new THREE.AmbientLight(0xbfd4ff, 0.5);
 scene.add(ambient);
+
+/** Đồ hoạ nâng cao: bóng nét 4096 + pixel ratio cao + màu đậm hơn (tốn GPU hơn) */
+export function applyGraphics(fancy: boolean): void {
+  renderer.setPixelRatio(fancy ? Math.min(window.devicePixelRatio, 2.5) : Math.min(window.devicePixelRatio, 1.75));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.toneMappingExposure = fancy ? 1.22 : 1.15;
+  const size = fancy ? 4096 : 2048;
+  if (sun.shadow.mapSize.x !== size) {
+    sun.shadow.mapSize.set(size, size);
+    sun.shadow.map?.dispose();
+    sun.shadow.map = null;
+  }
+  sun.shadow.radius = fancy ? 4 : 1;
+}
 const hemi = new THREE.HemisphereLight(0xcfe8ff, 0x9a7a52, 0.45);
 scene.add(hemi);
 

@@ -16,11 +16,13 @@ import { updateBuilder } from './builder';
 import { raycastBlock } from './raycast';
 import { loadLocalWorld, isConnected, sendPos, playerCount, net, tickPlayerStateSave } from './net';
 import { updateRemotePlayers } from './players';
-import { heldItem, itemName, infoEl, watertint, showPortalBar, hidePortalBar } from './ui';
+import { heldItem, itemName, infoEl, watertint, overlay, showPortalBar, hidePortalBar } from './ui';
 import { mobs } from './entities';
 import { sndBird, sndCricket } from './audio';
 import { t } from './i18n';
 import { updatePortal, getPortalProgress } from './portal';
+import { updatePlayerList } from './playerlist';
+import './settings';
 import './menu';
 
 let lastTime = performance.now();
@@ -39,6 +41,14 @@ function loop(now: number): void {
     updatePortal(dt);
   } else {
     hidePortalBar();
+    // panorama xoay chậm ở màn hình chính (như Minecraft)
+    if (overlay.style.display !== 'none') {
+      player.yaw -= dt * 0.045;
+      camera.position.set(player.pos.x, player.pos.y + player.eye, player.pos.z);
+      camera.rotation.order = 'YXZ';
+      camera.rotation.y = player.yaw;
+      camera.rotation.x = -0.08;
+    }
   }
   updateChunks(player.pos);
   if (getCurrentDimension() === 'overworld') {
@@ -51,6 +61,7 @@ function loop(now: number): void {
   updateHand(dt, keys);
   updateBuilder(dt);
   updateRemotePlayers(dt);
+  updatePlayerList(dt);
 
   sendPos(player.pos.x, player.pos.y, player.pos.z, player.yaw, player.pitch,
     player.riding ? player.riding.rideKind : null);

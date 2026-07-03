@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { B } from '@shared/blocks';
 import { atlasTex, NTILES } from './textures';
 import { camera } from './scene';
+import { makeToolModel, makeBoatModel, makeIgniterModel, makeEggModel } from './models';
 import { heldItem, uiEvents } from './ui';
 import { player } from './player';
 
@@ -12,9 +13,6 @@ handGroup.position.set(0.42, -0.38, -0.65);
 
 let handMesh: THREE.Object3D | null = null;
 let swingT = 1;
-
-const woodMat = new THREE.MeshLambertMaterial({ color: 0x8a6336 });
-const steelMat = new THREE.MeshStandardMaterial({ color: 0xd8e0e8, metalness: 0.7, roughness: 0.3 });
 
 function blockMat(blockId: number, face: 'top' | 'bottom' | 'side'): THREE.MeshLambertMaterial {
   const tile = B[blockId].tiles[face];
@@ -31,37 +29,6 @@ function blockMat(blockId: number, face: 'top' | 'bottom' | 'side'): THREE.MeshL
   });
 }
 
-function buildToolModel(toolId: string): THREE.Group {
-  const g = new THREE.Group();
-  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.032, 0.5, 8), woodMat);
-  handle.position.y = -0.06;
-  g.add(handle);
-
-  if (toolId === 'sword') {
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.02), steelMat);
-    blade.position.y = 0.32;
-    const guard = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.03, 0.04), steelMat);
-    guard.position.y = 0.1;
-    g.add(blade, guard);
-  } else if (toolId === 'pickaxe') {
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.05, 0.05), steelMat);
-    head.position.y = 0.18;
-    const pick = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.22, 0.05), steelMat);
-    pick.position.y = 0.14;
-    g.add(head, pick);
-  } else if (toolId === 'axe') {
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.04), steelMat);
-    head.position.set(0.07, 0.16, 0);
-    g.add(head);
-  } else {
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.035), steelMat);
-    head.position.y = 0.2;
-    g.add(head);
-  }
-  g.rotation.z = -0.45;
-  return g;
-}
-
 export function buildHandItem(): void {
   if (handMesh) handGroup.remove(handMesh);
   const it = heldItem();
@@ -75,26 +42,34 @@ export function buildHandItem(): void {
     handMesh = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.34, 0.34), mats);
     handMesh.rotation.y = Math.PI / 4;
   } else if (it.kind === 'boat') {
-    const g = new THREE.Group();
-    const hull = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.08, 0.45), woodMat);
-    const bow = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.45), woodMat);
-    bow.position.set(-0.14, 0.06, 0);
-    const oar = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.4, 6), new THREE.MeshLambertMaterial({ color: 0xa8804f }));
-    oar.position.set(0.12, 0.14, 0); oar.rotation.z = -0.5;
-    g.add(hull, bow, oar);
-    g.rotation.z = -0.3;
+    const g = makeBoatModel();
+    g.scale.setScalar(0.5);
+    g.rotation.z = -0.25;
+    g.rotation.y = 0.35;
     handMesh = g;
   } else if (it.kind === 'igniter') {
-    const g = new THREE.Group();
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.38, 8), new THREE.MeshLambertMaterial({ color: 0x444444 }));
-    handle.rotation.x = Math.PI / 2;
-    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 8), new THREE.MeshBasicMaterial({ color: 0xff6600 }));
-    flame.position.set(0, 0, -0.24);
-    g.add(handle, flame);
-    g.rotation.x = -0.45;
+    const g = makeIgniterModel();
+    g.scale.setScalar(0.8);
+    g.rotation.x = -0.3;
+    g.rotation.y = 0.5;
+    handMesh = g;
+  } else if (it.kind === 'egg') {
+    const g = makeEggModel(it.id);
+    g.scale.setScalar(0.75);
     handMesh = g;
   } else {
-    handMesh = buildToolModel(it.id);
+    const g = makeToolModel(it.id);
+    g.scale.setScalar(0.78);
+    // kiếm: lộ mặt lưỡi; rìu/cúp/xẻng: lưỡi hướng về trước như cầm thật
+    if (it.id.includes('sword')) {
+      g.rotation.z = -0.5;
+      g.rotation.y = -0.2;
+    } else {
+      g.rotation.y = -Math.PI / 2 + 0.28; // đầu dụng cụ quay ra trước
+      g.rotation.z = -0.42;
+      g.rotation.x = 0.1;
+    }
+    handMesh = g;
   }
   handGroup.add(handMesh);
 }
@@ -102,6 +77,7 @@ buildHandItem();
 uiEvents.addEventListener('slotchange', buildHandItem);
 
 export function updateHand(dt: number, keys: Record<string, boolean | undefined>): void {
+  handGroup.visible = !document.body.classList.contains('menu'); // ẩn ở màn hình chính
   if (swingT < 1) swingT = Math.min(swingT + dt / 0.25, 1);
   const swing = Math.sin(swingT * Math.PI);
   const moving = (keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD']) && player.onGround;

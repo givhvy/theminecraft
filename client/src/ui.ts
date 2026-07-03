@@ -6,11 +6,15 @@ import { t, blockName, toolName, lang, i18nEvents } from './i18n';
 
 export const uiEvents = new EventTarget();
 
+export type EggAnimal = 'horse' | 'pig' | 'cow' | 'chicken' | 'sheep' | 'zombie' | 'creeper';
+export const EGG_ANIMALS: EggAnimal[] = ['horse', 'pig', 'cow', 'chicken', 'sheep', 'zombie', 'creeper'];
+
 export type Item =
   | { kind: 'tool'; id: ToolId }
   | { kind: 'block'; id: number }
   | { kind: 'boat' }
-  | { kind: 'igniter' };
+  | { kind: 'igniter' }
+  | { kind: 'egg'; id: EggAnimal };
 
 export const hotbarItems: Item[] = [
   { kind: 'tool', id: 'sword' }, { kind: 'tool', id: 'pickaxe' },
@@ -34,21 +38,38 @@ export function itemName(item: Item): string {
   if (item.kind === 'tool') return toolName(item.id);
   if (item.kind === 'boat') return t('boat');
   if (item.kind === 'igniter') return lang === 'vi' ? IGNITER.name : IGNITER.nameEn;
+  if (item.kind === 'egg') return t('egg_' + item.id);
   return blockName(item.id);
 }
 
-export type InvTab = 'tools' | 'natural' | 'building' | 'furniture' | 'vehicles';
-let activeTab: InvTab = 'tools';
+export type InvTab = 'weapons' | 'tools' | 'animals' | 'natural' | 'building' | 'furniture' | 'vehicles';
+let activeTab: InvTab = 'weapons';
 
 const NATURAL_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 39, 40];
 const BUILDING_IDS = [21, 22, 23, 24, 42, 43, 44, 45];
 
+const toolItems = (weapon: boolean): Item[] =>
+  (Object.keys(TOOLS) as ToolId[]).filter(id => !!TOOLS[id].weapon === weapon).map(id => ({ kind: 'tool' as const, id }));
+
 function entriesForTab(tab: InvTab): Item[] {
-  if (tab === 'tools') return (Object.keys(TOOLS) as ToolId[]).map(id => ({ kind: 'tool' as const, id }));
+  if (tab === 'weapons') return toolItems(true);
+  if (tab === 'tools') return toolItems(false);
+  if (tab === 'animals') return EGG_ANIMALS.map(id => ({ kind: 'egg' as const, id }));
   if (tab === 'natural') return NATURAL_IDS.filter(id => B[id] && !B[id].noBreak).map(id => ({ kind: 'block' as const, id }));
   if (tab === 'building') return BUILDING_IDS.map(id => ({ kind: 'block' as const, id }));
   if (tab === 'furniture') return FURNITURE_IDS.map(id => ({ kind: 'block' as const, id }));
   return [{ kind: 'boat' }, { kind: 'igniter' }];
+}
+
+/** validate item từ localStorage/server (save cũ có thể chứa id không còn tồn tại) */
+export function sanitizeItem(it: unknown, fallback: Item): Item {
+  const o = it as Item | null;
+  if (!o || typeof o !== 'object') return fallback;
+  if (o.kind === 'tool') return TOOLS[o.id] ? o : fallback;
+  if (o.kind === 'block') return B[o.id] && !B[o.id].noBreak ? o : fallback;
+  if (o.kind === 'egg') return EGG_ANIMALS.includes(o.id) ? o : fallback;
+  if (o.kind === 'boat' || o.kind === 'igniter') return { kind: o.kind };
+  return fallback;
 }
 
 const hotbarEl = document.getElementById('hotbar')!;
@@ -73,10 +94,10 @@ const invEl = document.getElementById('inventory')!;
 const invGrid = document.getElementById('invgrid')!;
 const invTabsEl = document.getElementById('invtabs')!;
 
-const TAB_IDS: InvTab[] = ['tools', 'natural', 'building', 'furniture', 'vehicles'];
+const TAB_IDS: InvTab[] = ['weapons', 'tools', 'animals', 'natural', 'building', 'furniture', 'vehicles'];
 const TAB_KEYS: Record<InvTab, string> = {
-  tools: 'tabTools', natural: 'tabNatural', building: 'tabBuilding',
-  furniture: 'tabFurniture', vehicles: 'tabVehicles',
+  weapons: 'tabWeapons', tools: 'tabTools', animals: 'tabAnimals', natural: 'tabNatural',
+  building: 'tabBuilding', furniture: 'tabFurniture', vehicles: 'tabVehicles',
 };
 
 function renderTabs(): void {

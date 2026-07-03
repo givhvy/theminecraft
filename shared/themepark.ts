@@ -33,7 +33,7 @@ function fillBox(out: BlockPlacement[], x1: number, y1: number, z1: number, x2: 
         out.push([x, y, z, id]);
 }
 
-function ferrisWheel(out: BlockPlacement[], ox: number, oy: number, oz: number): void {
+export function ferrisWheel(out: BlockPlacement[], ox: number, oy: number, oz: number): void {
   const R = 12;
   // chân tháp
   for (let h = 0; h <= 18; h++) {
@@ -54,7 +54,7 @@ function ferrisWheel(out: BlockPlacement[], ox: number, oy: number, oz: number):
   fillBox(out, ox, oy + 16, oz, ox, oy + 19, oz, LOG);
 }
 
-function carousel(out: BlockPlacement[], ox: number, oy: number, oz: number): void {
+export function carousel(out: BlockPlacement[], ox: number, oy: number, oz: number): void {
   fillBox(out, ox - 6, oy, oz - 6, ox + 6, oy, oz + 6, CONCRETE_P);
   for (let a = 0; a < 360; a += 60) {
     const rad = a * Math.PI / 180;
@@ -67,7 +67,7 @@ function carousel(out: BlockPlacement[], ox: number, oy: number, oz: number): vo
   for (let y = oy + 6; y <= oy + 8; y++) out.push([ox, y, oz, GLOW]);
 }
 
-function rollerCoaster(out: BlockPlacement[], ox: number, oy: number, oz: number): void {
+export function rollerCoaster(out: BlockPlacement[], ox: number, oy: number, oz: number): void {
   const pts: [number, number, number][] = [
     [ox, oy + 2, oz], [ox + 4, oy + 4, oz + 3], [ox + 8, oy + 6, oz + 6],
     [ox + 12, oy + 10, oz + 8], [ox + 16, oy + 8, oz + 10], [ox + 20, oy + 5, oz + 12],

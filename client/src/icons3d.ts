@@ -1,26 +1,36 @@
 // Render icon 3D offscreen cho block/tool bằng Three.js
 import * as THREE from 'three';
-import { B, type ToolId } from '@shared/blocks';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { B } from '@shared/blocks';
 import { atlasTex, NTILES } from './textures';
+import { makeToolModel, makeBoatModel, makeIgniterModel, makeEggModel } from './models';
 import type { Item } from './ui';
 
-const SIZE = 96;
+const SIZE = 128;
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
 renderer.setSize(SIZE, SIZE);
 renderer.setClearColor(0x000000, 0);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
+// môi trường phản chiếu — kim loại/kim cương bóng thật
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
 const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 10);
 camera.position.set(1.55, 1.15, 1.55);
 camera.lookAt(0, 0.05, 0);
 
-const amb = new THREE.AmbientLight(0xffffff, 0.55);
-const key = new THREE.DirectionalLight(0xfff8ee, 1.1);
+const amb = new THREE.AmbientLight(0xffffff, 0.65);
+const key = new THREE.DirectionalLight(0xfff8ee, 1.35);
 key.position.set(2.5, 4, 2);
 const fill = new THREE.DirectionalLight(0x8899cc, 0.45);
 fill.position.set(-2, 1, -1);
-scene.add(amb, key, fill);
+const rim = new THREE.DirectionalLight(0xffffff, 0.7);
+rim.position.set(-1.5, 2.5, -3);
+scene.add(amb, key, fill, rim);
 
 const cache: Record<string, string> = {};
 
@@ -47,89 +57,15 @@ function makeBlockMesh(blockId: number): THREE.Mesh {
     blockMaterial(blockId, 'side'), blockMaterial(blockId, 'side'),
   ];
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.92, 0.92), mats);
-  mesh.rotation.y = Math.PI / 4 + 0.2;
-  mesh.rotation.x = -0.22;
+  // isometric chuẩn Minecraft: quay đúng 45°, không lệch
+  mesh.rotation.y = Math.PI / 4;
+  mesh.rotation.x = -0.48;
   return mesh;
 }
 
-function makeToolMesh(toolId: ToolId): THREE.Group {
-  const g = new THREE.Group();
-  const wood = new THREE.MeshLambertMaterial({ color: 0x8a6336 });
-  const steel = new THREE.MeshStandardMaterial({ color: 0xd8e0e8, metalness: 0.65, roughness: 0.35 });
-  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.55, 8), wood);
-  handle.position.y = -0.08;
-  g.add(handle);
-
-  if (toolId === 'sword') {
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.62, 0.03), steel);
-    blade.position.y = 0.38;
-    const guard = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.05), steel);
-    guard.position.y = 0.12;
-    g.add(blade, guard);
-  } else if (toolId === 'pickaxe') {
-    const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.42, 0.06), wood);
-    shaft.position.y = 0.05;
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.09, 0.09), steel);
-    head.position.y = 0.32;
-    const pick = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.28, 0.09), steel);
-    pick.position.set(0, 0.22, 0);
-    g.add(shaft, head, pick);
-  } else if (toolId === 'axe') {
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.24, 0.06), steel);
-    head.position.set(0.12, 0.22, 0);
-    const bit = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, 0.08), steel);
-    bit.position.set(0.22, 0.24, 0);
-    g.add(head, bit);
-  } else {
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.24, 0.05), steel);
-    head.position.y = 0.26;
-    g.add(head);
-  }
-  g.rotation.z = -0.4;
-  g.rotation.y = Math.PI / 5;
-  return g;
-}
-
-function makeBoatMesh(): THREE.Group {
-  const g = new THREE.Group();
-  const wood = new THREE.MeshLambertMaterial({ color: 0x8a6336 });
-  const woodD = new THREE.MeshLambertMaterial({ color: 0x6e4f2b });
-  const hull = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.14, 0.9), woodD);
-  hull.position.y = 0.02;
-  const bow = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.9), wood);
-  bow.position.set(-0.3, 0.1, 0);
-  const rail = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.06, 0.92), wood);
-  rail.position.y = 0.16;
-  g.add(hull, bow, rail);
-  g.rotation.y = Math.PI / 4;
-  g.rotation.x = -0.1;
-  return g;
-}
-
-function makeIgniterMesh(): THREE.Group {
-  const g = new THREE.Group();
-  const handle = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.05, 0.05, 0.45, 8),
-    new THREE.MeshLambertMaterial({ color: 0x444444 }),
-  );
-  handle.rotation.x = Math.PI / 2;
-  const flame = new THREE.Mesh(
-    new THREE.ConeGeometry(0.1, 0.22, 8),
-    new THREE.MeshBasicMaterial({ color: 0xff6600 }),
-  );
-  flame.position.set(0, 0, -0.3);
-  const glow = new THREE.Mesh(
-    new THREE.SphereGeometry(0.08, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.7 }),
-  );
-  glow.position.set(0, 0, -0.32);
-  g.add(handle, flame, glow);
-  g.rotation.x = -0.55;
-  return g;
-}
-
+const NUM_LIGHTS = 4;
 function renderObject(obj: THREE.Object3D): string {
-  while (scene.children.length > 3) scene.remove(scene.children[3]);
+  while (scene.children.length > NUM_LIGHTS) scene.remove(scene.children[NUM_LIGHTS]);
   scene.add(obj);
   renderer.render(scene, camera);
   return renderer.domElement.toDataURL('image/png');
@@ -143,10 +79,28 @@ export function icon3dForItem(item: Item): string {
   const k = item.kind + ':' + ('id' in item ? item.id : '');
   if (cache[k]) return cache[k];
   let obj: THREE.Object3D;
-  if (item.kind === 'tool') obj = makeToolMesh(item.id);
-  else if (item.kind === 'boat') obj = makeBoatMesh();
-  else if (item.kind === 'igniter') obj = makeIgniterMesh();
-  else obj = makeBlockMesh(item.id);
+  if (item.kind === 'tool') {
+    // dụng cụ đứng thẳng, xoay nhẹ cho thấy khối 3D
+    obj = makeToolModel(item.id);
+    obj.rotation.z = -0.1;
+    obj.rotation.y = 0.55;
+    obj.rotation.x = -0.06;
+    obj.position.y = -0.16;
+    obj.scale.setScalar(1.22);
+  } else if (item.kind === 'boat') {
+    obj = makeBoatModel();
+    obj.rotation.y = Math.PI / 4;
+    obj.rotation.x = -0.12;
+    obj.scale.setScalar(0.9);
+  } else if (item.kind === 'igniter') {
+    obj = makeIgniterModel();
+    obj.rotation.y = 0.4;
+    obj.scale.setScalar(1.6);
+  } else if (item.kind === 'egg') {
+    obj = makeEggModel(item.id);
+    obj.scale.setScalar(1.5);
+    obj.rotation.z = -0.12;
+  } else obj = makeBlockMesh(item.id);
   cache[k] = renderObject(obj);
   return cache[k];
 }

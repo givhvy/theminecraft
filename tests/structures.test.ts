@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { STRUCTURES } from '@shared/structures';
 import { isValidBlockId, AIR } from '@shared/blocks';
+import { findPortalFrameAt } from '@shared/portal';
 
 describe('STRUCTURES (AI Builder)', () => {
-  it('có đủ 9 công trình, id không trùng', () => {
-    expect(STRUCTURES.length).toBe(9);
+  it('có đủ 10 công trình, id không trùng', () => {
+    expect(STRUCTURES.length).toBe(10);
     const ids = STRUCTURES.map(s => s.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -13,7 +14,8 @@ describe('STRUCTURES (AI Builder)', () => {
     describe(s.name, () => {
       const blocks = s.gen();
       it('sinh ra block (không rỗng)', () => {
-        expect(blocks.length).toBeGreaterThan(50);
+        // portal là công trình nhỏ gọn có chủ đích
+        expect(blocks.length).toBeGreaterThan(s.id === 'portal' ? 30 : 50);
       });
       it('mọi block id đều hợp lệ', () => {
         for (const [, , , id] of blocks) expect(isValidBlockId(id)).toBe(true);
@@ -31,6 +33,15 @@ describe('STRUCTURES (AI Builder)', () => {
       });
     });
   }
+
+  it('cổng nether dựng sẵn tạo khung hợp lệ (kích hoạt được bằng Lửa mồi)', () => {
+    const portal = STRUCTURES.find(s => s.id === 'portal')!;
+    const placed = new Map<string, number>();
+    for (const [x, y, z, id] of portal.gen()) placed.set(`${x},${y},${z}`, id);
+    const get = (x: number, y: number, z: number) => placed.get(`${x},${y},${z}`) ?? AIR;
+    // click vào block khung dưới cùng
+    expect(findPortalFrameAt(0, 1, 2, get)).not.toBeNull();
+  });
 
   it('nhà hiện đại có nội thất', () => {
     const modern = STRUCTURES.find(s => s.id === 'modern')!;

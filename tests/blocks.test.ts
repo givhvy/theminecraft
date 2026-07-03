@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { B, TOOLS, isValidBlockId, toolIsFast, AIR } from '@shared/blocks';
 
-const NTILES = 52; // phải khớp với client/src/textures.ts
+const NTILES = 66; // phải khớp với client/src/textures.ts
 
 describe('blocks', () => {
   it('mọi tile index nằm trong atlas', () => {

@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <title>TheMinecraft - Voxel World</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
@@ -20,16 +23,23 @@
 <div id="langtoggle"><span data-lang="en">EN</span><span data-lang="vi">VI</span></div>
 <div id="inventory"><h2 id="invtitle"></h2><div id="invtabs"></div><div id="invgrid"></div></div>
 <div id="builder"><h2 id="buildtitle"></h2><div id="buildgrid"></div></div>
-<div id="deathscreen"><h1 id="deathtitle"></h1><button id="respawnbtn"></button></div>
+<div id="deathscreen"><h1 id="deathtitle"></h1><button id="respawnbtn" class="mcbtn mcbtn-green"></button></div>
+<div id="playerlist"></div>
 <div id="overlay">
-  <h1>TheMinecraft</h1>
-  <p id="ctrl1"></p>
-  <p id="ctrl2"></p>
-  <p id="ctrl3"></p>
-  <p id="ctrl4"></p>
+  <div id="titlewrap">
+    <h1 id="gamelogo">TheMinecraft</h1>
+    <div id="splash"></div>
+  </div>
   <div id="joinbox">
     <input id="nameinput" maxlength="16" autocomplete="off">
-    <div class="start" id="playbtn">Click to play</div>
+    <div class="start mcbtn mcbtn-green" id="playbtn">Click to play</div>
+    <button id="settingsbtn" class="mcbtn"></button>
+    <div id="settingsbox" style="display:none">
+      <div id="settingshead"></div>
+      <button id="sethud" class="mcbtn setrow"></button>
+      <button id="setfancy" class="mcbtn setrow"></button>
+      <div id="setfancyhint"></div>
+    </div>
     <div id="joinstatus"></div>
     <div id="accountbox">
       <div id="accounthead"></div>
@@ -37,17 +47,25 @@
         <input id="accuser" maxlength="16" autocomplete="username">
         <input id="accpass" type="password" autocomplete="current-password">
         <div class="accbtns">
-          <button id="loginbtn"></button>
-          <button id="registerbtn"></button>
+          <button id="loginbtn" class="mcbtn"></button>
+          <button id="registerbtn" class="mcbtn"></button>
         </div>
         <div id="accstatus"></div>
       </div>
       <div id="accloggedin" style="display:none">
-        <span id="accwho"></span> <button id="logoutbtn"></button>
+        <span id="accwho"></span> <button id="logoutbtn" class="mcbtn"></button>
       </div>
       <div id="guesthint"></div>
     </div>
   </div>
+  <div id="menuhints">
+    <p id="ctrl1"></p>
+    <p id="ctrl2"></p>
+    <p id="ctrl3"></p>
+    <p id="ctrl4"></p>
+  </div>
+  <div id="menuversion">TheMinecraft v6.0</div>
+  <div id="menucredit">TypeScript + Three.js</div>
 </div>
 <script type="module" src="./src/main.ts"></script>
 </body>

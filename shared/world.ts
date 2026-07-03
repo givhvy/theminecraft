@@ -3,6 +3,7 @@ import { CHUNK, HEIGHT, SEA_LEVEL } from './config.js';
 import { AIR, WATER, BEDROCK, LAVA, B, NETHERRACK, GLOW } from './blocks.js';
 import { hash2, noise3, terrainHeight } from './noise.js';
 import { stampThemeParkIntoChunk } from './themepark.js';
+import { stampFeaturesIntoChunk } from './features.js';
 import type { DimensionId } from './dimensions.js';
 
 /** dung nham lấp đầy hang động từ y này trở xuống */
@@ -98,8 +99,10 @@ export class WorldMap {
         if (data[idx(lx, ly, lz)] === AIR) data[idx(lx, ly, lz)] = 5;
       }
     }
-    // công viên giải trí
+    // công viên giải trí chính gần spawn
     stampThemeParkIntoChunk(data, cx, cz, CHUNK, HEIGHT, idx);
+    // làng, lâu đài bí ẩn, công viên mini rải khắp thế giới
+    stampFeaturesIntoChunk(data, cx, cz, CHUNK, HEIGHT, idx);
     return data;
   }
 

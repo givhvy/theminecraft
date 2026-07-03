@@ -10,9 +10,11 @@ import { player, damagePlayer, type Rideable } from './player';
 import { mobs } from './entities';
 import { explode } from './tnt';
 import { spawnParticle } from './particles';
-import { sndHit, sndFuse, sndZombieGroan, sndMobDeath, sndHorseNeigh } from './audio';
+import { sndHit, sndFuse, sndZombieGroan, sndMobDeath, sndHorseNeigh, sndOink, sndMoo, sndCluck, sndBaa } from './audio';
 
-export type MobType = 'zombie' | 'creeper' | 'horse';
+export type MobType = 'zombie' | 'creeper' | 'horse' | 'pig' | 'cow' | 'chicken' | 'sheep';
+export const PASSIVE_TYPES: MobType[] = ['horse', 'pig', 'cow', 'chicken', 'sheep'];
+export function isPassive(t: MobType): boolean { return PASSIVE_TYPES.includes(t); }
 
 function makeFaceTexture(draw: (g: CanvasRenderingContext2D) => void): THREE.CanvasTexture {
   const c = document.createElement('canvas');
@@ -43,6 +45,30 @@ const horseFace = makeFaceTexture(g => {
   for (let i = 0; i < 24; i++) g.fillRect((Math.random() * 16) | 0, (Math.random() * 16) | 0, 1, 1);
   g.fillStyle = '#f0ead8'; g.fillRect(6, 8, 4, 8);   // vệt trắng mũi
   g.fillStyle = '#111'; g.fillRect(2, 3, 3, 3); g.fillRect(11, 3, 3, 3);
+});
+const pigFace = makeFaceTexture(g => {
+  g.fillStyle = '#eda3a3'; g.fillRect(0, 0, 16, 16);
+  g.fillStyle = '#d98888'; g.fillRect(4, 8, 8, 5);   // mõm
+  g.fillStyle = '#7a3a3a'; g.fillRect(6, 10, 1, 2); g.fillRect(9, 10, 1, 2); // lỗ mũi
+  g.fillStyle = '#111'; g.fillRect(2, 4, 2, 2); g.fillRect(12, 4, 2, 2);
+});
+const cowFace = makeFaceTexture(g => {
+  g.fillStyle = '#6b4a33'; g.fillRect(0, 0, 16, 16);
+  g.fillStyle = '#e8e0d2'; g.fillRect(4, 9, 8, 7);   // mõm sáng
+  g.fillStyle = '#5a3a26'; g.fillRect(5, 11, 2, 2); g.fillRect(9, 11, 2, 2);
+  g.fillStyle = '#111'; g.fillRect(2, 4, 2, 2); g.fillRect(12, 4, 2, 2);
+});
+const chickenFace = makeFaceTexture(g => {
+  g.fillStyle = '#f2eee6'; g.fillRect(0, 0, 16, 16);
+  g.fillStyle = '#e8b23a'; g.fillRect(6, 9, 4, 4);   // mỏ vàng
+  g.fillStyle = '#c94040'; g.fillRect(6, 13, 4, 3);  // yếm đỏ
+  g.fillStyle = '#111'; g.fillRect(3, 4, 2, 2); g.fillRect(11, 4, 2, 2);
+});
+const sheepFace = makeFaceTexture(g => {
+  g.fillStyle = '#d8cfc2'; g.fillRect(0, 0, 16, 16); // mặt xám nhạt
+  g.fillStyle = '#f4f1ea'; g.fillRect(0, 0, 16, 5);  // lông trán
+  g.fillStyle = '#111'; g.fillRect(3, 6, 2, 2); g.fillRect(11, 6, 2, 2);
+  g.fillStyle = '#b09a8a'; g.fillRect(6, 11, 4, 3);
 });
 
 function box(w: number, h: number, d: number, color: number, faceTex?: THREE.Texture): THREE.Mesh {
@@ -115,6 +141,69 @@ export class Mob implements Rideable {
       }
       this.group.add(head, body);
       this.parts = { head, body };
+    } else if (type === 'pig') {
+      this.halfW = 0.4; this.height = 0.9; this.speed = 1.8; this.detect = 0; this.hp = 12;
+      const pink = 0xeda3a3, pinkD = 0xd98888;
+      const body = box(0.7, 0.55, 1.1, pink); body.position.y = 0.62;
+      const head = box(0.5, 0.5, 0.45, pink, pigFace); head.position.set(0, 0.72, -0.72);
+      const snout = box(0.24, 0.16, 0.1, pinkD); snout.position.set(0, 0.65, -0.98);
+      const tail = box(0.08, 0.08, 0.18, pinkD); tail.position.set(0, 0.78, 0.6); tail.rotation.x = -0.6;
+      for (const [lx, lz] of [[-0.22, 0.35], [0.22, 0.35], [-0.22, -0.35], [0.22, -0.35]]) {
+        const leg = box(0.18, 0.36, 0.18, pinkD);
+        leg.position.set(lx, 0.36, lz); leg.geometry.translate(0, -0.18, 0);
+        this.legs.push(leg); this.group.add(leg);
+      }
+      this.group.add(body, head, snout, tail);
+      this.parts = { head, body };
+    } else if (type === 'cow') {
+      this.halfW = 0.45; this.height = 1.3; this.speed = 1.6; this.detect = 0; this.hp = 16;
+      const coat = 0x6b4a33, patch = 0xe8e0d2, horn = 0xd8d0c0;
+      const body = box(0.8, 0.7, 1.3, coat); body.position.y = 0.95;
+      // đốm trắng
+      for (const [px, py, pz] of [[-0.25, 1.1, 0.3], [0.28, 0.9, -0.15], [0.1, 1.2, 0.5]]) {
+        const p = box(0.3, 0.25, 0.35, patch); p.position.set(px, py, pz);
+        this.group.add(p);
+      }
+      const head = box(0.45, 0.45, 0.4, coat, cowFace); head.position.set(0, 1.35, -0.85);
+      const hornL = box(0.08, 0.14, 0.08, horn); hornL.position.set(-0.24, 1.62, -0.8);
+      const hornR = hornL.clone(); hornR.position.x = 0.24;
+      const udder = box(0.3, 0.16, 0.34, 0xf0c8c8); udder.position.set(0, 0.55, 0.35);
+      for (const [lx, lz] of [[-0.26, 0.45], [0.26, 0.45], [-0.26, -0.45], [0.26, -0.45]]) {
+        const leg = box(0.2, 0.6, 0.2, coat);
+        leg.position.set(lx, 0.6, lz); leg.geometry.translate(0, -0.3, 0);
+        this.legs.push(leg); this.group.add(leg);
+      }
+      this.group.add(body, head, hornL, hornR, udder);
+      this.parts = { head, body };
+    } else if (type === 'chicken') {
+      this.halfW = 0.22; this.height = 0.7; this.speed = 2.2; this.detect = 0; this.hp = 6;
+      const white = 0xf2eee6, wing = 0xe4ded2;
+      const body = box(0.4, 0.4, 0.55, white); body.position.y = 0.45;
+      const head = box(0.28, 0.32, 0.26, white, chickenFace); head.position.set(0, 0.78, -0.3);
+      const comb = box(0.1, 0.1, 0.14, 0xc94040); comb.position.set(0, 0.98, -0.3);
+      const wingL = box(0.08, 0.28, 0.4, wing); wingL.position.set(-0.24, 0.5, 0);
+      const wingR = wingL.clone(); wingR.position.x = 0.24;
+      const tailF = box(0.3, 0.22, 0.14, wing); tailF.position.set(0, 0.58, 0.32); tailF.rotation.x = 0.5;
+      for (const lx of [-0.1, 0.1]) {
+        const leg = box(0.06, 0.26, 0.06, 0xe8b23a);
+        leg.position.set(lx, 0.25, 0.05); leg.geometry.translate(0, -0.13, 0);
+        this.legs.push(leg); this.group.add(leg);
+      }
+      this.group.add(body, head, comb, wingL, wingR, tailF);
+      this.parts = { head, body };
+    } else if (type === 'sheep') {
+      this.halfW = 0.4; this.height = 1.1; this.speed = 1.7; this.detect = 0; this.hp = 12;
+      const wool = 0xf4f1ea, skin = 0xd8cfc2;
+      const body = box(0.75, 0.65, 1.15, wool); body.position.y = 0.85;
+      const head = box(0.34, 0.36, 0.34, skin, sheepFace); head.position.set(0, 1.15, -0.72);
+      const woolHat = box(0.4, 0.14, 0.4, wool); woolHat.position.set(0, 1.38, -0.72);
+      for (const [lx, lz] of [[-0.22, 0.4], [0.22, 0.4], [-0.22, -0.4], [0.22, -0.4]]) {
+        const leg = box(0.16, 0.5, 0.16, skin);
+        leg.position.set(lx, 0.5, lz); leg.geometry.translate(0, -0.25, 0);
+        this.legs.push(leg); this.group.add(leg);
+      }
+      this.group.add(body, head, woolHat);
+      this.parts = { head, body };
     } else { // horse — nâng cấp model chi tiết
       this.halfW = 0.45; this.height = 1.6; this.speed = 2.2; this.detect = 0;
       this.hp = 26;
@@ -186,17 +275,22 @@ export class Mob implements Rideable {
         sndZombieGroan(Math.max(0.02, 0.13 * (1 - dist / 24)));
       }
     }
-    if (this.type === 'horse' && dist < 18) {
+    if (isPassive(this.type) && dist < 18) {
       this.groanTimer -= dt;
       if (this.groanTimer <= 0) {
         this.groanTimer = 8 + Math.random() * 10;
-        sndHorseNeigh(Math.max(0.02, 0.1 * (1 - dist / 20)));
+        const v = Math.max(0.02, 0.1 * (1 - dist / 20));
+        if (this.type === 'horse') sndHorseNeigh(v);
+        else if (this.type === 'pig') sndOink(v);
+        else if (this.type === 'cow') sndMoo(v);
+        else if (this.type === 'chicken') sndCluck(v * 0.8);
+        else if (this.type === 'sheep') sndBaa(v);
       }
     }
 
-    // AI di chuyển (ngựa chỉ đi lang thang)
+    // AI di chuyển (động vật hiền chỉ đi lang thang)
     let desire = 0;
-    if (this.type !== 'horse' && dist < this.detect && !player.dead) {
+    if (!isPassive(this.type) && dist < this.detect && !player.dead) {
       this.heading = Math.atan2(toPlayer.x, toPlayer.z);
       desire = (this.type === 'creeper' && this.fuse >= 0) ? 0 : this.speed;
     } else {
@@ -204,7 +298,7 @@ export class Mob implements Rideable {
       if (this.wanderTimer <= 0) {
         this.wanderTimer = 2 + Math.random() * 4;
         this.heading = Math.random() * Math.PI * 2;
-        this.idle = Math.random() < (this.type === 'horse' ? 0.6 : 0.4);
+        this.idle = Math.random() < (isPassive(this.type) ? 0.6 : 0.4);
       }
       desire = this.idle ? 0 : this.speed * 0.5;
     }
@@ -247,6 +341,10 @@ export class Mob implements Rideable {
     this.hp -= amount;
     sndHit();
     if (this.type === 'horse') sndHorseNeigh(0.12);
+    else if (this.type === 'pig') sndOink(0.13);
+    else if (this.type === 'cow') sndMoo(0.12);
+    else if (this.type === 'chicken') sndCluck(0.12);
+    else if (this.type === 'sheep') sndBaa(0.12);
     this.flashUntil = performance.now() + 140;
     this.setEmissive(0xaa0000);
     if (fromPos) {
@@ -275,29 +373,45 @@ export class Mob implements Rideable {
   }
 }
 
+/** spawn mob tại vị trí (dùng cho trứng spawn trong inventory) */
+export function spawnMobAt(type: MobType, x: number, y: number, z: number): Mob {
+  const m = new Mob(type, x, y, z);
+  mobs.push(m);
+  return m;
+}
+
+const MAX_PASSIVE = 16; // tổng động vật hiền quanh người chơi
 let spawnTimer = 0;
 function updateMobSpawning(dt: number): void {
   if (getCurrentDimension() !== 'overworld') return;
   spawnTimer -= dt;
   if (spawnTimer > 0) return;
-  spawnTimer = 3.5;
+  spawnTimer = 2.2;
   const night = sunElevation() < 0.05;
+  const passives = mobs.filter(m => isPassive(m.type)).length;
   const horses = mobs.filter(m => m.type === 'horse').length;
-  const hostiles = mobs.length - horses;
+  const hostiles = mobs.length - passives;
 
   const ang = Math.random() * Math.PI * 2;
-  const d = 24 + Math.random() * 20;
+  const d = 20 + Math.random() * 24;
   const x = Math.floor(player.pos.x + Math.cos(ang) * d);
   const z = Math.floor(player.pos.z + Math.sin(ang) * d);
   const h = terrainHeight(x, z);
   if (h <= SEA_LEVEL) return;
 
   const nearPark = isNearThemePark(x, z);
-  const horseLimit = nearPark ? MAX_HORSES + 4 : MAX_HORSES;
-  const horseChance = nearPark ? 0.55 : 0.3;
+  const passiveLimit = nearPark ? MAX_PASSIVE + 6 : MAX_PASSIVE;
 
-  if (!night && horses < horseLimit && Math.random() < horseChance && h < 44) {
-    mobs.push(new Mob('horse', x + 0.5, h + 1.2, z + 0.5));
+  // ban ngày: ưu tiên spawn động vật hiền (thường theo cặp cho sống động)
+  if (!night && passives < passiveLimit && Math.random() < (nearPark ? 0.8 : 0.65) && h < 44) {
+    // ngựa được ưu tiên khi còn ít
+    const type: MobType = (horses < MAX_HORSES && Math.random() < (nearPark ? 0.5 : 0.35))
+      ? 'horse'
+      : PASSIVE_TYPES[1 + (Math.random() * 4 | 0)]; // pig/cow/chicken/sheep
+    mobs.push(new Mob(type, x + 0.5, h + 1.2, z + 0.5));
+    if (type !== 'horse' && Math.random() < 0.5 && passives + 1 < passiveLimit) {
+      mobs.push(new Mob(type, x + 2, h + 1.2, z + 1.5)); // bạn đồng hành
+    }
     return;
   }
   if (hostiles >= MAX_MOBS || Math.random() > (night ? 0.85 : 0.3)) return;

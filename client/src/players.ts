@@ -46,6 +46,14 @@ export class RemotePlayer {
   snaps: Snap[] = [];
   walkPhase = 0;
   lastX = 0; lastZ = 0;
+  /** trạng thái mới nhất cho tab cộng đồng (kể cả khác dimension) */
+  latest: { x: number; y: number; z: number; ride: string | null; dimension: string; t: number } | null = null;
+  prevLatest: { x: number; z: number; t: number } | null = null;
+
+  setLatest(it: { x: number; y: number; z: number; ride: string | null; dimension?: string }): void {
+    if (this.latest) this.prevLatest = { x: this.latest.x, z: this.latest.z, t: this.latest.t };
+    this.latest = { x: it.x, y: it.y, z: it.z, ride: it.ride, dimension: it.dimension || 'overworld', t: performance.now() / 1000 };
+  }
 
   constructor(info: RemoteInfo) {
     this.info = info;

@@ -70,6 +70,19 @@ export const B: Record<number, BlockDef> = {
   43: { name: 'Bê tông vàng',  nameEn: 'Yellow Concrete', tiles: { top: 49, bottom: 49, side: 49 }, hardness: 2.5, mat: 'stone' },
   44: { name: 'Bê tông xanh',  nameEn: 'Blue Concrete',  tiles: { top: 50, bottom: 50, side: 50 }, hardness: 2.5, mat: 'stone' },
   45: { name: 'Bê tông hồng',  nameEn: 'Pink Concrete',  tiles: { top: 51, bottom: 51, side: 51 }, hardness: 2.5, mat: 'stone' },
+  // ---- nội thất mở rộng ----
+  46: { name: 'Tủ quần áo',    nameEn: 'Wardrobe',        tiles: { top: 27, bottom: 27, side: 52 }, hardness: 1.2, mat: 'wood' },
+  47: { name: 'Đàn piano',     nameEn: 'Piano',           tiles: { top: 54, bottom: 26, side: 53 }, hardness: 1.0, mat: 'wood' },
+  48: { name: 'Bồn cầu',       nameEn: 'Toilet',          tiles: { top: 55, bottom: 24, side: 55 }, hardness: 0.8, mat: 'stone' },
+  49: { name: 'Bồn tắm',       nameEn: 'Bathtub',         tiles: { top: 57, bottom: 24, side: 56 }, hardness: 0.8, mat: 'stone' },
+  50: { name: 'Bồn rửa mặt',   nameEn: 'Sink',            tiles: { top: 57, bottom: 24, side: 58 }, hardness: 0.6, mat: 'stone' },
+  51: { name: 'Gương',         nameEn: 'Mirror',          tiles: { top: 8,  bottom: 8,  side: 59 }, hardness: 0.4, mat: 'glass' },
+  52: { name: 'Máy tính',      nameEn: 'Computer',        tiles: { top: 26, bottom: 26, side: 60 }, hardness: 1.0, mat: 'metal' },
+  53: { name: 'Máy giặt',      nameEn: 'Washing Machine', tiles: { top: 24, bottom: 24, side: 61 }, hardness: 1.5, mat: 'metal' },
+  54: { name: 'Lò sưởi',       nameEn: 'Fireplace',       tiles: { top: 11, bottom: 11, side: 62 }, hardness: 2.0, mat: 'stone', emissive: true },
+  55: { name: 'Đồng hồ treo',  nameEn: 'Wall Clock',      tiles: { top: 8,  bottom: 8,  side: 63 }, hardness: 0.4, mat: 'wood' },
+  56: { name: 'Bể cá',         nameEn: 'Aquarium',        tiles: { top: 9,  bottom: 8,  side: 64 }, hardness: 0.4, mat: 'glass', transparent: true },
+  57: { name: 'Cây cảnh',      nameEn: 'Potted Plant',    tiles: { top: 6,  bottom: 41, side: 65 }, hardness: 0.3, mat: 'leaf', transparent: true },
 };
 
 export const WATER = 9, BEDROCK = 13, TNT = 20, OBSIDIAN = 18, LAVA = 39;
@@ -84,16 +97,30 @@ export const NETHERRACK = 40, PORTAL = 41;
 export const CONCRETE_R = 42, CONCRETE_Y = 43, CONCRETE_BL = 44, CONCRETE_P = 45;
 
 /** id nội thất (furniture) */
-export const FURNITURE_IDS = [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38];
+export const FURNITURE_IDS = [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+  46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57];
 
-export type ToolId = 'sword' | 'pickaxe' | 'axe' | 'shovel';
-export interface ToolDef { name: string; nameEn: string; dmg: number; fast: BlockMat | BlockMat[] }
+export type ToolId =
+  | 'sword' | 'gold_sword' | 'diamond_sword'
+  | 'pickaxe' | 'diamond_pickaxe' | 'axe' | 'shovel';
+export type ToolTier = 'iron' | 'gold' | 'diamond';
+export interface ToolDef {
+  name: string; nameEn: string; dmg: number; fast: BlockMat | BlockMat[];
+  tier: ToolTier;
+  /** vũ khí — hiện trong tab Vũ khí thay vì Dụng cụ */
+  weapon?: boolean;
+  /** hệ số đào nhanh khi đúng chất liệu (mặc định 3.5) */
+  speed?: number;
+}
 
 export const TOOLS: Record<ToolId, ToolDef> = {
-  sword:   { name: 'Kiếm',  nameEn: 'Sword',   dmg: 8, fast: ['leaf', 'cloth'] },
-  pickaxe: { name: 'Cúp',   nameEn: 'Pickaxe', dmg: 4, fast: ['stone', 'metal'] },
-  axe:     { name: 'Rìu',   nameEn: 'Axe',     dmg: 4, fast: 'wood'  },
-  shovel:  { name: 'Xẻng',  nameEn: 'Shovel',  dmg: 3, fast: 'earth' },
+  sword:           { name: 'Kiếm sắt',        nameEn: 'Iron Sword',      dmg: 8,  fast: ['leaf', 'cloth'], tier: 'iron',    weapon: true },
+  gold_sword:      { name: 'Kiếm vàng',       nameEn: 'Gold Sword',      dmg: 12, fast: ['leaf', 'cloth'], tier: 'gold',    weapon: true },
+  diamond_sword:   { name: 'Kiếm kim cương',  nameEn: 'Diamond Sword',   dmg: 16, fast: ['leaf', 'cloth'], tier: 'diamond', weapon: true },
+  pickaxe:         { name: 'Cúp sắt',         nameEn: 'Iron Pickaxe',    dmg: 4,  fast: ['stone', 'metal'], tier: 'iron' },
+  diamond_pickaxe: { name: 'Cúp kim cương',   nameEn: 'Diamond Pickaxe', dmg: 6,  fast: ['stone', 'metal'], tier: 'diamond', speed: 6 },
+  axe:             { name: 'Rìu',             nameEn: 'Axe',             dmg: 4,  fast: 'wood',  tier: 'iron' },
+  shovel:          { name: 'Xẻng',            nameEn: 'Shovel',          dmg: 3,  fast: 'earth', tier: 'iron' },
 };
 
 export const IGNITER = { name: 'Lửa mồi', nameEn: 'Igniter' };

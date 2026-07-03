@@ -315,7 +315,20 @@ function dragonStatue(): BlockPlacement[] {
   return o;
 }
 
+// ---- 🔮 Cổng Nether dựng sẵn ----
+function netherPortal(): BlockPlacement[] {
+  const o: BlockPlacement[] = [];
+  // bệ obsidian + khung 4×5 đứng (lòng khung để trống — dùng Lửa mồi kích hoạt)
+  fillBox(o, -2, 0, 1, 3, 0, 3, OBSIDIAN);
+  for (let x = 0; x <= 3; x++) o.push([x, 1, 2, OBSIDIAN], [x, 5, 2, OBSIDIAN]);
+  for (let y = 2; y <= 4; y++) o.push([0, y, 2, OBSIDIAN], [3, y, 2, OBSIDIAN]);
+  fillBox(o, 1, 2, 2, 2, 4, 2, AIR); // dọn lòng khung để kích hoạt được
+  o.push([-2, 1, 1, GLOW], [-2, 1, 3, GLOW]); // đèn hai bên lối vào
+  return o;
+}
+
 export const STRUCTURES: Structure[] = [
+  { id: 'portal',     emoji: '🔮', name: 'Cổng Nether',    nameEn: 'Nether Portal',  desc: 'Khung obsidian 4×5 dựng sẵn — dùng Lửa mồi kích hoạt', descEn: 'Ready-made 4×5 obsidian frame — light it with the Igniter', gen: netherPortal },
   { id: 'modern',     emoji: '🏡', name: 'Nhà hiện đại',   nameEn: 'Modern House',   desc: 'Biệt thự 2 tầng kính + bê tông, full nội thất, hồ bơi', descEn: '2-story glass & concrete villa, fully furnished, with a pool', gen: modernHouse },
   { id: 'house',      emoji: '🏠', name: 'Nhà gỗ',         nameEn: 'Wooden House',   desc: 'Nhà ván gỗ ấm cúng có giường, bàn ghế, kệ sách', descEn: 'Cozy plank house with bed, table, chairs and bookshelf', gen: house },
   { id: 'castle',     emoji: '🏰', name: 'Lâu đài',        nameEn: 'Castle',         desc: 'Tường thành, 4 tháp canh, cổng và sảnh chính', descEn: 'Walls, 4 watchtowers, gate and great hall', gen: castle },

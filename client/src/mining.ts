@@ -12,8 +12,8 @@ import { Boat } from './boat';
 import { igniteTNT } from './tnt';
 import { spawnBlockParticles } from './particles';
 import { swingHand, isSwinging } from './hand';
-import { sndBreak, sndPlace, sndMount } from './audio';
-import type { Mob } from './mobs';
+import { sndBreak, sndPlace, sndMount, sndEggPop } from './audio';
+import { spawnMobAt, type Mob } from './mobs';
 
 export const mining = { breaking: false };
 
@@ -27,7 +27,7 @@ function breakTimeFor(blockId: number): number {
   if (!def || def.noBreak) return Infinity;
   const it = heldItem();
   let mult = 1;
-  if (it.kind === 'tool' && toolIsFast(TOOLS[it.id], def.mat)) mult = 3.5;
+  if (it.kind === 'tool' && toolIsFast(TOOLS[it.id], def.mat)) mult = TOOLS[it.id].speed ?? 3.5;
   return Math.max(def.hardness * 0.42 / mult, 0.06);
 }
 
@@ -135,6 +135,17 @@ export function interact(): void {
         swingHand();
         sndPlace(41);
       }
+    }
+    return;
+  }
+
+  // 2b. trứng spawn → thả con vật ra chỗ nhắm
+  if (it.kind === 'egg') {
+    const hit = raycastBlock();
+    if (hit) {
+      spawnMobAt(it.id, hit.x + hit.nx + 0.5, hit.y + hit.ny + 0.3, hit.z + hit.nz + 0.5);
+      swingHand();
+      sndEggPop();
     }
     return;
   }

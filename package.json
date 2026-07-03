@@ -4,7 +4,7 @@
   "description": "Minecraft clone full stack: Three.js + TypeScript client, authoritative Node.js server",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"cross-env PORT=3000 tsx watch server/index.ts\" \"vite\"",
+    "dev": "concurrently -k \"cross-env PORT=3001 tsx watch server/index.ts\" \"vite\"",
     "build": "vite build",
     "start": "cross-env NODE_ENV=production tsx server/index.ts",
     "test": "vitest run",

@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { rand01 } from '@shared/noise';
 
-export const TILE = 16, NTILES = 52;
+export const TILE = 16, NTILES = 66;
 export const tileBaseColor: [number, number, number][] = [];
 
 type TileFn = (x: number, y: number, r: number, g: number, b: number, a?: number) => number[] | void;
@@ -191,6 +191,86 @@ drawTile(48, [190, 55, 55], 6);                                     // bê tông
 drawTile(49, [230, 195, 55], 6);                                    // bê tông vàng
 drawTile(50, [55, 95, 190], 6);                                     // bê tông xanh
 drawTile(51, [230, 140, 180], 6);                                   // bê tông hồng
+
+// ===== nội thất mở rộng (52-65) =====
+drawTile(52, [166, 130, 82], 6, (x, y, r, g, b) => {               // tủ quần áo: 2 cánh cao + tay nắm
+  if (x === 7 || x === 8) return [r - 40, g - 34, b - 24];
+  if ((x === 5 || x === 10) && y > 6 && y < 10) return [90, 92, 98];
+  if (y < 2 || y > 13) return [r - 24, g - 20, b - 14];
+});
+drawTile(53, [28, 26, 30], 4, (x, y) => {                          // piano: phím trắng/đen
+  if (y > 9) return x % 2 === 0 ? [240, 238, 232] : [225, 222, 214];
+  if (y > 7 && y <= 9 && x % 4 === 2) return [10, 10, 12];
+});
+drawTile(54, [24, 22, 26], 3, (x, y) => {                          // mặt piano: gỗ đen bóng
+  if ((x + y) % 9 === 0) return [55, 52, 60];
+});
+drawTile(55, [240, 242, 245], 4, (x, y) => {                       // bồn cầu: sứ trắng + nắp
+  if (y > 4 && y < 9 && x > 3 && x < 12) return [205, 212, 220];
+  if (y >= 12) return [215, 220, 226];
+});
+drawTile(56, [240, 242, 245], 4, (x, y) => {                       // bồn tắm: thành cong + chân
+  if (y < 3) return [215, 220, 226];
+  if (y > 12 && (x < 3 || x > 12)) return [180, 186, 194];
+});
+drawTile(57, [130, 190, 230], 6, (x, y) => {                       // mặt nước bồn: gợn sóng
+  if (rand01(x * 7 + y * 13) < 0.15) return [190, 225, 245];
+  if (x < 2 || x > 13 || y < 2 || y > 13) return [240, 242, 245];
+});
+drawTile(58, [240, 242, 245], 4, (x, y) => {                       // bồn rửa: trụ + vòi
+  if (y < 5 && x > 4 && x < 11) return [205, 212, 220];
+  if (y === 2 && x >= 7 && x <= 9) return [150, 155, 162];
+  if (y >= 5 && (x < 5 || x > 10)) return [225, 228, 233];
+});
+drawTile(59, [200, 214, 228], 3, (x, y) => {                       // gương: khung gỗ + vệt sáng chéo
+  if (x < 2 || x > 13 || y < 2 || y > 13) return [120, 90, 55];
+  if ((x - y === 3) || (x - y === 4) || (x - y === -5)) return [245, 250, 255];
+});
+drawTile(60, [55, 58, 64], 4, (x, y) => {                          // máy tính: màn hình code + bàn phím
+  if (x > 1 && x < 14 && y > 1 && y < 9) {
+    return rand01(x * 11 + y * 5) < 0.3 ? [80, 220, 120] : [18, 22, 28];
+  }
+  if (y > 11 && x > 2 && x < 13) return y % 2 ? [95, 100, 108] : [70, 74, 82];
+});
+drawTile(61, [235, 238, 240], 4, (x, y) => {                       // máy giặt: cửa tròn kính
+  const d = Math.hypot(x - 7.5, y - 8.5);
+  if (d < 3) return [60, 90, 130];
+  if (d < 4.2) return [150, 155, 162];
+  if (y < 3) return [200, 204, 208];
+});
+drawTile(62, [150, 70, 58], 9, (x, y) => {                         // lò sưởi: gạch + lửa cháy
+  if (x > 3 && x < 12 && y > 6) {
+    const f = rand01(x * 17 + y * 29);
+    if (y > 10) return f < 0.5 ? [255, 200, 60] : [255, 120, 30];
+    return f < 0.4 ? [255, 150, 40] : [40, 30, 28];
+  }
+  const row = y / 4 | 0;
+  if (y % 4 === 3 || (x + (row % 2) * 4 + 2) % 8 === 7) return [200, 195, 188];
+});
+drawTile(63, [120, 90, 55], 5, (x, y) => {                         // đồng hồ: mặt tròn + kim
+  const d = Math.hypot(x - 7.5, y - 7.5);
+  if (d < 5) {
+    if ((x === 7 || x === 8) && y > 3 && y <= 8) return [40, 40, 45];   // kim phút
+    if (y === 7 && x > 8 && x < 11) return [180, 50, 50];               // kim giờ
+    return [240, 236, 226];
+  }
+  if (d < 6.2) return [80, 60, 38];
+});
+drawTile(64, [70, 140, 190], 5, (x, y) => {                        // bể cá: cá cam + rong
+  if (x < 1 || x > 14 || y < 1 || y > 14) return [170, 190, 205];
+  const fish = (Math.abs(x - 5) < 2 && Math.abs(y - 6) < 1.5) || (Math.abs(x - 10) < 2 && Math.abs(y - 10) < 1.5);
+  if (fish) return [240, 140, 50];
+  if (x % 5 === 1 && y > 9) return [50, 150, 80];
+  return [70, 140, 190, 0.82];
+});
+drawTile(65, [160, 90, 60], 8, (x, y) => {                         // cây cảnh: chậu + thân + lá
+  if (y > 11) return undefined;                                     // chậu đất nung
+  if (y > 9) return [110, 78, 50];
+  if ((x === 7 || x === 8) && y > 5) return [90, 65, 40];           // thân
+  const d = Math.hypot(x - 7.5, y - 4);
+  if (d < 4.5 && rand01(x * 13 + y * 7) < 0.75) return [60, 145, 55];
+  return [0, 0, 0, 0];
+});
 
 export const atlasTex = new THREE.CanvasTexture(atlasCanvas);
 atlasTex.magFilter = THREE.NearestFilter;

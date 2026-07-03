@@ -4,7 +4,7 @@ import { CHUNK } from '@shared/config';
 import type { DimensionId } from '@shared/dimensions';
 import { showSaved } from './ui';
 import { remotePlayers, RemotePlayer, type RemoteInfo } from './players';
-import { hotbarItems, type Item } from './ui';
+import { hotbarItems, sanitizeItem, type Item } from './ui';
 
 interface PlayersItem { id: string; x: number; y: number; z: number; yaw: number; pitch: number; ride: string | null; dimension?: string }
 type ServerMsg =
@@ -87,7 +87,7 @@ export function loadLocalWorld(): void {
   try {
     const hb = JSON.parse(localStorage.getItem(LS_HOTBAR) || 'null');
     if (Array.isArray(hb) && hb.length === 9) {
-      for (let i = 0; i < 9; i++) hotbarItems[i] = hb[i];
+      for (let i = 0; i < 9; i++) hotbarItems[i] = sanitizeItem(hb[i], hotbarItems[i]);
     }
   } catch { /* noop */ }
 }
@@ -100,7 +100,7 @@ export async function loadPlayerStateFromServer(): Promise<void> {
     if (!r.ok) return;
     const data = await r.json();
     if (Array.isArray(data.hotbar) && data.hotbar.length === 9) {
-      for (let i = 0; i < 9; i++) hotbarItems[i] = data.hotbar[i];
+      for (let i = 0; i < 9; i++) hotbarItems[i] = sanitizeItem(data.hotbar[i], hotbarItems[i]);
     }
   } catch { /* noop */ }
 }
@@ -190,6 +190,7 @@ function handleMsg(msg: ServerMsg): void {
   } else if (msg.type === 'players') {
     for (const it of msg.list) {
       if (it.id === net.id) continue;
+      remotePlayers.get(it.id)?.setLatest(it); // tab cộng đồng thấy mọi dimension
       if (it.dimension && it.dimension !== getCurrentDimension()) continue;
       remotePlayers.get(it.id)?.push(it);
     }

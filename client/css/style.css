@@ -1,14 +1,112 @@
 html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; background: #000; font-family: 'Segoe UI', sans-serif; user-select: none; }
 #game { display: block; width: 100%; height: 100%; }
 
+/* ---- màn hình khởi động kiểu Minecraft ---- */
 #overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+  position: fixed; inset: 0;
+  background: linear-gradient(rgba(8,10,18,0.38), rgba(8,10,18,0.52) 62%, rgba(5,6,12,0.72));
+  backdrop-filter: blur(3.5px);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   color: #fff; z-index: 20; cursor: pointer; text-align: center;
 }
-#overlay h1 { font-size: 44px; margin: 0 0 10px; text-shadow: 3px 3px 0 #2c2c2c; letter-spacing: 2px; }
-#overlay p { color: #ccc; line-height: 1.8; margin: 3px 0; font-size: 14px; }
-#overlay .start { margin-top: 18px; font-size: 20px; padding: 10px 34px; background: #5b8731; border: 2px solid #7fb84d; color: #fff; border-radius: 4px; }
+#titlewrap { position: relative; margin-bottom: 26px; }
+#gamelogo {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 52px; margin: 0; letter-spacing: 1px; line-height: 1;
+  background: linear-gradient(#e8e8e8 12%, #bfc4ca 38%, #8c9299 62%, #676d74 88%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 5px 0 #24272b) drop-shadow(2px 0 0 #17181b)
+          drop-shadow(-2px 0 0 #17181b) drop-shadow(0 -2px 0 #17181b)
+          drop-shadow(0 10px 14px rgba(0,0,0,0.7));
+}
+#splash {
+  position: absolute; right: -46px; bottom: -26px;
+  font-family: 'Press Start 2P', monospace; font-size: 13px;
+  color: #ffff55; text-shadow: 2px 2px 0 #3f3f00;
+  transform-origin: center; pointer-events: none; white-space: nowrap;
+  animation: splashpulse 0.44s ease-in-out infinite alternate;
+}
+@keyframes splashpulse {
+  from { transform: rotate(-17deg) scale(1); }
+  to   { transform: rotate(-17deg) scale(1.09); }
+}
+
+/* nút kiểu Minecraft: đá xám vát cạnh, viền đen */
+.mcbtn {
+  font-family: 'Press Start 2P', monospace; font-size: 13px;
+  color: #fff; text-shadow: 2px 2px 0 rgba(0,0,0,0.55);
+  background: linear-gradient(#a8a8a8, #7f7f7f 45%, #6c6c6c);
+  border: 2px solid #0c0c0c; border-radius: 2px;
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,0.4), inset -2px -3px 0 rgba(0,0,0,0.42),
+              0 4px 10px rgba(0,0,0,0.5);
+  padding: 11px 18px; cursor: pointer;
+}
+.mcbtn:hover {
+  background: linear-gradient(#94a6d4, #6f83b7 45%, #5c6f9f);
+  border-color: #fff;
+}
+.mcbtn:active { box-shadow: inset -2px -2px 0 rgba(255,255,255,0.3), inset 2px 3px 0 rgba(0,0,0,0.42); }
+.mcbtn-green {
+  background: linear-gradient(#79b74a, #5b8731 45%, #4a7026);
+}
+.mcbtn-green:hover {
+  background: linear-gradient(#8bcb5b, #6b9c3b 45%, #57822d);
+  border-color: #fff;
+}
+
+#overlay .start { margin-top: 16px; font-size: 16px; padding: 15px 0; width: 320px; box-sizing: border-box; }
+
+#menuhints {
+  position: absolute; bottom: 44px; left: 50%; transform: translateX(-50%);
+  width: min(92vw, 900px); pointer-events: none;
+}
+#menuhints p { color: rgba(215,222,230,0.72); line-height: 1.7; margin: 2px 0; font-size: 12px; text-shadow: 1px 1px 0 rgba(0,0,0,0.8); }
+#menuversion, #menucredit {
+  position: absolute; bottom: 8px; font-family: 'Press Start 2P', monospace;
+  font-size: 9px; color: rgba(255,255,255,0.55); text-shadow: 1px 1px 0 #000; pointer-events: none;
+}
+#menuversion { left: 10px; }
+#menucredit { right: 10px; }
+/* ẩn HUD khi đang ở màn hình chính */
+body.menu #hotbar, body.menu #hearts, body.menu #crosshair,
+body.menu #info, body.menu #savestate { display: none; }
+/* cài đặt: tắt HUD info góc trên trái */
+body.nohud #info { display: none; }
+
+/* ---- panel cài đặt ---- */
+#settingsbtn { font-size: 10px; padding: 9px 16px; }
+#settingsbox {
+  display: none; flex-direction: column; gap: 8px; align-items: center;
+  padding: 12px 18px; background: rgba(0,0,0,0.55);
+  border: 2px solid #0c0c0c; border-radius: 2px;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.14), 0 4px 12px rgba(0,0,0,0.5);
+}
+#settingshead { font-family: 'Press Start 2P', monospace; font-size: 10px; color: #cfcfcf; text-shadow: 1px 1px 0 #000; }
+.setrow { font-size: 10px; padding: 9px 14px; width: 300px; box-sizing: border-box; }
+#setfancyhint { font-size: 10px; color: #999; max-width: 300px; line-height: 1.4; }
+
+/* ---- tab cộng đồng (giữ Tab) ---- */
+#playerlist {
+  position: fixed; top: 54px; left: 50%; transform: translateX(-50%);
+  min-width: 380px; max-width: 520px; z-index: 26; display: none;
+  background: rgba(12,12,16,0.82); border: 2px solid #0c0c0c; border-radius: 2px;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.16), 0 6px 16px rgba(0,0,0,0.55);
+  padding: 10px 14px;
+}
+#playerlist .plhead {
+  font-family: 'Press Start 2P', monospace; font-size: 10px; color: #ffff55;
+  text-shadow: 1px 1px 0 #3f3f00; text-align: center; margin-bottom: 8px;
+}
+#playerlist .plrow {
+  display: flex; align-items: center; gap: 8px; padding: 4px 2px;
+  font-size: 13px; color: #eee; text-shadow: 1px 1px 0 #000;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+#playerlist .plrow:last-child { border-bottom: none; }
+#playerlist .plchip { width: 12px; height: 12px; border: 1px solid #000; flex: none; }
+#playerlist .plname { font-weight: bold; min-width: 130px; text-align: left; }
+#playerlist .plact { flex: 1; text-align: left; color: #bcd; }
+#playerlist .pldist { color: #999; font-size: 12px; min-width: 60px; text-align: right; }
 
 #crosshair {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
@@ -17,10 +115,15 @@ html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; background: 
 
 #hotbar { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; z-index: 5; pointer-events: none; }
 .slot {
-  width: 50px; height: 50px; background: rgba(0,0,0,0.5); border: 2px solid #888;
-  border-radius: 4px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; position: relative;
+  width: 50px; height: 50px; background: rgba(30,30,34,0.72);
+  border: 2px solid #1a1a1a; border-radius: 2px;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.18), inset -1px -1px 0 rgba(0,0,0,0.5);
+  box-sizing: border-box; display: flex; align-items: center; justify-content: center; position: relative;
 }
-.slot.active { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.7); }
+.slot.active {
+  border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.85), 0 0 12px rgba(255,255,255,0.5);
+  background: rgba(60,60,66,0.8);
+}
 .slot img { width: 38px; height: 38px; image-rendering: auto; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
 .slot .num { position: absolute; top: 1px; left: 4px; font-size: 10px; color: #ddd; }
 
@@ -42,22 +145,30 @@ html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; background: 
 }
 #portalbar > div { height: 100%; width: 0%; background: linear-gradient(90deg, #6600cc, #cc44ff); border-radius: 4px; transition: width 0.1s; }
 
-#invtabs { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; justify-content: center; }
+#invtabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center; }
 .invtab {
-  padding: 6px 12px; font-size: 12px; background: rgba(0,0,0,0.45); color: #bbb;
-  border: 1px solid #666; border-radius: 4px; cursor: pointer;
+  font-family: 'Press Start 2P', monospace; font-size: 9px;
+  padding: 8px 12px; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,0.55); cursor: pointer;
+  background: linear-gradient(#a8a8a8, #7f7f7f 45%, #6c6c6c);
+  border: 2px solid #0c0c0c; border-radius: 2px;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.4), inset -1px -2px 0 rgba(0,0,0,0.42);
 }
-.invtab.active { background: #5b8731; color: #fff; border-color: #7fb84d; }
-.invtab:hover { border-color: #fff; color: #fff; }
-#invgrid { display: grid; grid-template-columns: repeat(4, 72px); gap: 8px; }
+.invtab.active {
+  background: linear-gradient(#79b74a, #5b8731 45%, #4a7026);
+  border-color: #fff;
+}
+.invtab:hover { border-color: #fff; }
+#invgrid { display: grid; grid-template-columns: repeat(4, 72px); gap: 6px; }
 .invcell {
-  width: 72px; height: 72px; background: rgba(0,0,0,0.5); border: 2px solid #666; border-radius: 4px;
+  width: 72px; height: 72px; background: #8b8b8b; border-radius: 2px;
+  border-top: 2px solid #373737; border-left: 2px solid #373737;
+  border-bottom: 2px solid #fff; border-right: 2px solid #fff;
   display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-sizing: border-box;
   position: relative; padding: 4px;
 }
-.invcell:hover { border-color: #fff; background: rgba(80,80,90,0.6); }
-.invcell img { width: 44px; height: 44px; image-rendering: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); }
-.invcell .invlabel { font-size: 9px; color: #ccc; text-align: center; margin-top: 2px; line-height: 1.1; max-width: 68px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.invcell:hover { background: #a5b0be; }
+.invcell img { width: 44px; height: 44px; image-rendering: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.45)); }
+.invcell .invlabel { font-size: 9px; color: #2c2c2c; font-weight: bold; text-align: center; margin-top: 2px; line-height: 1.1; max-width: 68px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 #vignette {
   position: fixed; inset: 0; z-index: 8; pointer-events: none; opacity: 0;
@@ -70,25 +181,32 @@ html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; background: 
   position: fixed; inset: 0; z-index: 30; display: none; flex-direction: column; align-items: center; justify-content: center;
   background: rgba(120,0,0,0.55); color: #fff; text-align: center;
 }
-#deathscreen h1 { font-size: 52px; text-shadow: 3px 3px 0 #400; }
-#deathscreen button { font-size: 22px; padding: 12px 40px; background: #5b8731; color: #fff; border: 2px solid #7fb84d; border-radius: 4px; cursor: pointer; }
+#deathscreen h1 { font-family: 'Press Start 2P', monospace; font-size: 40px; text-shadow: 4px 4px 0 #400; }
+#deathscreen button { font-size: 15px; padding: 14px 44px; }
 
+/* container kiểu Minecraft: nền xám sáng, viền bevel trắng/tối */
 #inventory, #builder {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
-  background: rgba(25,25,30,0.96); border: 2px solid #777; border-radius: 8px; padding: 16px;
+  background: #c6c6c6; border-radius: 3px; padding: 16px;
+  border-top: 3px solid #fff; border-left: 3px solid #fff;
+  border-bottom: 3px solid #555; border-right: 3px solid #555;
+  outline: 3px solid #0c0c0c;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
   z-index: 25; display: none; max-width: 680px; max-height: 72vh; overflow-y: auto;
 }
-#inventory h2, #builder h2 { color: #fff; margin: 0 0 12px; font-size: 17px; text-align: center; }
+#inventory h2, #builder h2 { color: #3f3f3f; margin: 0 0 12px; font-size: 14px; text-align: center; text-shadow: none; }
 
-#buildgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+#buildgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .buildcard {
-  background: rgba(0,0,0,0.5); border: 2px solid #666; border-radius: 6px; padding: 14px 10px;
-  cursor: pointer; text-align: center; color: #ddd;
+  background: #8b8b8b; border-radius: 2px; padding: 12px 10px;
+  border-top: 2px solid #373737; border-left: 2px solid #373737;
+  border-bottom: 2px solid #fff; border-right: 2px solid #fff;
+  cursor: pointer; text-align: center; color: #2c2c2c;
 }
-.buildcard:hover { border-color: #ffd24a; background: rgba(80,75,40,0.5); }
+.buildcard:hover { background: #a5b0be; }
 .buildcard .emoji { font-size: 34px; }
-.buildcard .name { font-size: 14px; font-weight: bold; margin-top: 6px; color: #fff; }
-.buildcard .desc { font-size: 11px; color: #aaa; margin-top: 3px; line-height: 1.4; }
+.buildcard .name { font-size: 13px; font-weight: bold; margin-top: 6px; color: #1e1e1e; }
+.buildcard .desc { font-size: 11px; color: #3d3d3d; margin-top: 3px; line-height: 1.4; }
 
 #savestate { position: fixed; top: 8px; right: 8px; color: #9f9; font-size: 12px; text-shadow: 1px 1px 0 #000; z-index: 5; opacity: 0; transition: opacity .4s; }
 
@@ -102,31 +220,32 @@ html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; background: 
 #langtoggle span:hover { color: #fff; }
 
 /* ---- form tham gia + tài khoản ---- */
-#joinbox { margin-top: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: default; }
+#joinbox { margin-top: 4px; display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: default; }
 #nameinput {
-  width: 240px; padding: 9px 12px; font-size: 16px; text-align: center;
-  background: rgba(0,0,0,0.55); border: 2px solid #777; border-radius: 4px; color: #fff; outline: none;
+  width: 320px; padding: 12px; font-size: 14px; text-align: center; box-sizing: border-box;
+  font-family: 'Press Start 2P', monospace;
+  background: rgba(0,0,0,0.72); border: 2px solid #a0a0a0; border-radius: 2px; color: #fff; outline: none;
+  box-shadow: inset 0 0 0 1px #000, 0 4px 10px rgba(0,0,0,0.5);
 }
-#nameinput:focus { border-color: #7fb84d; }
+#nameinput::placeholder { color: #8a8a8a; }
+#nameinput:focus { border-color: #fff; }
 #joinbox .start { cursor: pointer; margin-top: 2px; }
-#joinbox .start:hover { background: #6b9c3b; }
-#joinstatus { font-size: 13px; color: #ffd24a; min-height: 16px; }
+#joinstatus { font-size: 13px; color: #ffff55; min-height: 16px; text-shadow: 1px 1px 0 #000; }
 #accountbox {
-  margin-top: 6px; padding: 10px 16px; background: rgba(0,0,0,0.35);
-  border: 1px solid #555; border-radius: 6px; display: flex; flex-direction: column; gap: 7px; align-items: center;
+  margin-top: 8px; padding: 12px 20px; background: rgba(0,0,0,0.55);
+  border: 2px solid #0c0c0c; border-radius: 2px;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.14), 0 4px 12px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column; gap: 7px; align-items: center;
 }
-#accounthead { font-size: 13px; color: #bbb; font-weight: bold; }
+#accounthead { font-family: 'Press Start 2P', monospace; font-size: 10px; color: #cfcfcf; text-shadow: 1px 1px 0 #000; }
 #accountforms { display: flex; flex-direction: column; gap: 6px; align-items: center; }
 #accountforms input {
-  width: 200px; padding: 6px 10px; font-size: 13px;
-  background: rgba(0,0,0,0.55); border: 1px solid #666; border-radius: 4px; color: #fff; outline: none;
+  width: 230px; padding: 8px 10px; font-size: 13px; box-sizing: border-box;
+  background: rgba(0,0,0,0.72); border: 2px solid #7a7a7a; border-radius: 2px; color: #fff; outline: none;
 }
+#accountforms input:focus { border-color: #fff; }
 .accbtns { display: flex; gap: 8px; }
-.accbtns button, #logoutbtn {
-  padding: 5px 14px; font-size: 12px; background: #444; color: #fff;
-  border: 1px solid #777; border-radius: 4px; cursor: pointer;
-}
-.accbtns button:hover, #logoutbtn:hover { background: #5b8731; border-color: #7fb84d; }
+.accbtns button, #logoutbtn { font-size: 10px; padding: 9px 14px; }
 #accstatus { font-size: 12px; color: #f88; min-height: 14px; }
 #accloggedin { font-size: 13px; color: #9f9; display: flex; gap: 8px; align-items: center; }
 #guesthint { font-size: 11px; color: #888; }
